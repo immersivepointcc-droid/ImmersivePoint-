@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ImmersivePoint</title>
+  <script>
+    // GitHub Pages SPA redirect: sends unknown paths to the correct module
+    const path = window.location.pathname;
+    const modules = ['dashboard', 'spark', 'passport', 'crm', 'vendors'];
+    const match = modules.find(m => path.startsWith('/' + m));
+    if (match) {
+      window.location.replace('/' + match + '/');
+    } else if (path.startsWith('/p/')) {
+      window.location.replace('/passport/' + window.location.search + '#share=' + path.split('/p/')[1]);
+    } else {
+      window.location.replace('/');
+    }
+  </script>
+</head>
+<body></body>
+</html>
