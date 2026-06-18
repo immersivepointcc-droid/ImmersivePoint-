@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM · ImmersivePoint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/shared/theme.css">
+  <style>
+    /* ── CRM Module Styles ── */
+
+    .crm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-6);
+    }
+
+    .crm-header h1 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .crm-header h1 span {
+      color: var(--cyan);
+    }
+
+    .crm-stats {
+      display: flex;
+      gap: var(--sp-4);
+      flex-wrap: wrap;
+    }
+
+    .crm-stat {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-5);
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .crm-stat-value {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--cyan);
+    }
+
+    .crm-stat-label {
+      font-size: 0.7rem;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
+
+    /* ── Tab Navigation ── */
+
+    .crm-tabs {
+      display: flex;
+      gap: var(--sp-1);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--sp-6);
+    }
+
+    .crm-tab {
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      background: none;
+      border: none;
+      padding: var(--sp-3) var(--sp-5);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      position: relative;
+      bottom: -1px;
+    }
+
+    .crm-tab:hover {
+      color: var(--ink);
+    }
+
+    .crm-tab.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+    }
+
+    .crm-tab .tab-count {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--ink-faint);
+      margin-left: var(--sp-2);
+      background: var(--surface-1);
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
+
+    .crm-tab.active .tab-count {
+      color: var(--cyan);
+      background: rgba(0, 180, 216, 0.1);
+    }
+
+    /* ── Panel ── */
+
+    .crm-panel {
+      display: none;
+    }
+
+    .crm-panel.active {
+      display: block;
+    }
+
+    /* ── Toolbar ── */
+
+    .crm-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--sp-4);
+    }
+
+    .crm-toolbar .input-search {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .crm-toolbar .select {
+      min-width: 160px;
+      flex: 0 0 auto;
+    }
+
+    /* ── Table Enhancements ── */
+
+    .contact-name {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .contact-email {
+      font-size: 0.8rem;
+      color: var(--ink-dim);
+    }
+
+    .contact-phone {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .org-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+      color: var(--purple-glow);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
+    .status-prospect { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+    .status-active { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .status-enrolled { background: rgba(0, 180, 216, 0.15); color: var(--cyan); }
+    .status-completed { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .status-inactive { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+
+    .actions-cell {
+      display: flex;
+      gap: var(--sp-1);
+    }
+
+    .table td.actions-cell {
+      white-space: nowrap;
+    }
+
+    .last-contact-date {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--ink-dim);
+    }
+
+    /* ── Org Cards ── */
+
+    .org-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--sp-4);
+    }
+
+    .org-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-5);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .org-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: var(--shadow-glow-cyan);
+      transform: translateY(-1px);
+    }
+
+    .org-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--sp-3);
+    }
+
+    .org-card-name {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .org-type-badge {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .org-type-school { background: rgba(0, 180, 216, 0.15); color: var(--cyan); }
+    .org-type-nonprofit { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .org-type-employer { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .org-type-government { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+    .org-type-other { background: rgba(143, 163, 184, 0.15); color: var(--ink-dim); }
+
+    .org-card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-1);
+      font-size: 0.8rem;
+      color: var(--ink-dim);
+    }
+
+    .org-card-meta span {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .org-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: var(--sp-4);
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+    }
+
+    .org-contact-count {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--cyan);
+    }
+
+    /* ── Interaction Timeline ── */
+
+    .timeline {
+      position: relative;
+      padding-left: var(--sp-8);
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: var(--sp-5);
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: calc(-1 * var(--sp-8) + 4px);
+      top: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--surface-2);
+    }
+
+    .timeline-dot-email { background: var(--cyan); }
+    .timeline-dot-phone { background: #22c55e; }
+    .timeline-dot-meeting { background: var(--purple-glow); }
+    .timeline-dot-session { background: var(--amber); }
+    .timeline-dot-note { background: var(--ink-dim); }
+    .timeline-dot-referral { background: #f472b6; }
+
+    .timeline-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4);
+    }
+
+    .timeline-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-2);
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+    }
+
+    .timeline-contact {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 0.9rem;
+    }
+
+    .timeline-date {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--ink-faint);
+    }
+
+    .timeline-type {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 1px 8px;
+      border-radius: 999px;
+    }
+
+    .timeline-type-email { background: rgba(0, 180, 216, 0.15); color: var(--cyan); }
+    .timeline-type-phone { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .timeline-type-meeting { background: rgba(168, 85, 247, 0.15); color: #a78bfa; }
+    .timeline-type-session { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .timeline-type-note { background: rgba(143, 163, 184, 0.15); color: var(--ink-dim); }
+    .timeline-type-referral { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+
+    .timeline-notes {
+      font-size: 0.85rem;
+      color: var(--ink-dim);
+      line-height: 1.5;
+    }
+
+    /* ── Modal Overrides ── */
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 12, 22, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 560px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(12px);
+      transition: transform var(--transition-fast);
+    }
+
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-5) var(--sp-6);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--ink-dim);
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: var(--sp-1);
+      line-height: 1;
+      transition: color var(--transition-fast);
+    }
+
+    .modal-close:hover {
+      color: var(--ink);
+    }
+
+    .modal-body {
+      padding: var(--sp-5) var(--sp-6);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-6);
+      border-top: 1px solid var(--border);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-4);
+    }
+
+    /* ── Contact Detail Panel ── */
+
+    .detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 12, 22, 0.6);
+      z-index: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+    }
+
+    .detail-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 480px;
+      max-width: 95vw;
+      background: var(--surface-1);
+      border-left: 1px solid var(--border);
+      z-index: 901;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform var(--transition-base);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .detail-panel.open {
+      transform: translateX(0);
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: var(--sp-6);
+      border-bottom: 1px solid var(--border);
+      gap: var(--sp-3);
+    }
+
+    .detail-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0 0 var(--sp-1) 0;
+    }
+
+    .detail-header p {
+      font-size: 0.82rem;
+      color: var(--ink-dim);
+      margin: 0;
+    }
+
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--sp-5) var(--sp-6);
+    }
+
+    .detail-section {
+      margin-bottom: var(--sp-6);
+    }
+
+    .detail-section h3 {
+      font-family: var(--font-heading);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--cyan);
+      margin: 0 0 var(--sp-3) 0;
+    }
+
+    .detail-field {
+      display: flex;
+      justify-content: space-between;
+      padding: var(--sp-2) 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(0, 180, 216, 0.06);
+    }
+
+    .detail-field-label {
+      color: var(--ink-faint);
+    }
+
+    .detail-field-value {
+      color: var(--ink);
+      font-weight: 500;
+      text-align: right;
+    }
+
+    .detail-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--sp-2);
+      margin-top: var(--sp-2);
+    }
+
+    .detail-tag {
+      font-size: 0.72rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: rgba(0, 180, 216, 0.1);
+      color: var(--cyan);
+      font-weight: 500;
+    }
+
+    .detail-notes {
+      font-size: 0.85rem;
+      color: var(--ink-dim);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* ── Empty State ── */
+
+    .empty-state {
+      text-align: center;
+      padding: var(--sp-16) var(--sp-6);
+      color: var(--ink-dim);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: var(--sp-4);
+      opacity: 0.4;
+    }
+
+    .empty-state h3 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      color: var(--ink);
+      margin: 0 0 var(--sp-2) 0;
+    }
+
+    .empty-state p {
+      font-size: 0.85rem;
+      margin: 0 0 var(--sp-5) 0;
+    }
+
+    /* ── Responsive ── */
+
+    @media (max-width: 768px) {
+      .crm-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .crm-stats {
+        justify-content: space-between;
+      }
+
+      .crm-stat {
+        min-width: 0;
+        flex: 1;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .crm-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .crm-toolbar .select {
+        width: 100%;
+      }
+
+      .table-wrap {
+        font-size: 0.82rem;
+      }
+
+      .detail-panel {
+        width: 100%;
+      }
+    }
+
+    /* ── Loader ── */
+
+    .crm-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--sp-3);
+      padding: var(--sp-8);
+      color: var(--ink-dim);
+      font-size: 0.9rem;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ── Toasts ── */
+
+    .toast-container {
+      position: fixed;
+      bottom: var(--sp-6);
+      right: var(--sp-6);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    .toast {
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-5);
+      font-size: 0.85rem;
+      color: var(--ink);
+      box-shadow: var(--shadow-md);
+      animation: slideIn 0.25s ease;
+    }
+
+    .toast-success { border-left: 3px solid var(--success); }
+    .toast-error { border-left: 3px solid var(--danger); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Searchable Dropdown ── */
+
+    .searchable-dropdown {
+      position: relative;
+    }
+
+    .searchable-dropdown-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 50;
+      display: none;
+    }
+
+    .searchable-dropdown-list.open {
+      display: block;
+    }
+
+    .searchable-dropdown-item {
+      padding: var(--sp-2) var(--sp-4);
+      font-size: 0.85rem;
+      color: var(--ink-dim);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .searchable-dropdown-item:hover {
+      background: rgba(0, 180, 216, 0.08);
+      color: var(--ink);
+    }
+
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 12, 22, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+
+    .confirm-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-6);
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .confirm-box h3 {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      color: var(--ink);
+      margin: 0 0 var(--sp-3) 0;
+    }
+
+    .confirm-box p {
+      font-size: 0.85rem;
+      color: var(--ink-dim);
+      margin: 0 0 var(--sp-5) 0;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: var(--sp-3);
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CRM Header -->
+  <div class="crm-header">
+    <h1><span>///</span> Contact Management</h1>
+    <div class="crm-stats" id="crm-stats">
+      <div class="crm-stat">
+        <div class="crm-stat-value" id="stat-contacts">--</div>
+        <div class="crm-stat-label">Contacts</div>
+      </div>
+      <div class="crm-stat">
+        <div class="crm-stat-value" id="stat-orgs">--</div>
+        <div class="crm-stat-label">Organizations</div>
+      </div>
+      <div class="crm-stat">
+        <div class="crm-stat-value" id="stat-interactions">--</div>
+        <div class="crm-stat-label">Interactions</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="crm-tabs" role="tablist">
+    <button class="crm-tab active" data-tab="contacts" role="tab" aria-selected="true">
+      Contacts <span class="tab-count" id="tab-count-contacts">0</span>
+    </button>
+    <button class="crm-tab" data-tab="organizations" role="tab" aria-selected="false">
+      Organizations <span class="tab-count" id="tab-count-orgs">0</span>
+    </button>
+    <button class="crm-tab" data-tab="interactions" role="tab" aria-selected="false">
+      Interactions <span class="tab-count" id="tab-count-interactions">0</span>
+    </button>
+  </div>
+
+  <!-- ═══════════════ CONTACTS PANEL ═══════════════ -->
+  <div class="crm-panel active" id="panel-contacts" role="tabpanel">
+    <div class="crm-toolbar">
+      <input type="text" class="input input-search" id="contact-search" placeholder="Search contacts by name or email...">
+      <select class="select" id="contact-status-filter">
+        <option value="">All Statuses</option>
+        <option value="prospect">Prospect</option>
+        <option value="active">Active</option>
+        <option value="enrolled">Enrolled</option>
+        <option value="completed">Completed</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <select class="select" id="contact-org-filter">
+        <option value="">All Organizations</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-contact">+ Add Contact</button>
+    </div>
+
+    <div id="contacts-content">
+      <div class="crm-loading"><div class="spinner"></div> Loading contacts...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ORGANIZATIONS PANEL ═══════════════ -->
+  <div class="crm-panel" id="panel-organizations" role="tabpanel">
+    <div class="crm-toolbar">
+      <input type="text" class="input input-search" id="org-search" placeholder="Search organizations...">
+      <select class="select" id="org-type-filter">
+        <option value="">All Types</option>
+        <option value="school">School</option>
+        <option value="nonprofit">Nonprofit</option>
+        <option value="employer">Employer</option>
+        <option value="government">Government</option>
+        <option value="other">Other</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-org">+ Add Organization</button>
+    </div>
+
+    <div id="orgs-content">
+      <div class="crm-loading"><div class="spinner"></div> Loading organizations...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ INTERACTIONS PANEL ═══════════════ -->
+  <div class="crm-panel" id="panel-interactions" role="tabpanel">
+    <div class="crm-toolbar">
+      <input type="text" class="input input-search" id="interaction-search" placeholder="Search interactions...">
+      <select class="select" id="interaction-type-filter">
+        <option value="">All Types</option>
+        <option value="email">Email</option>
+        <option value="phone">Phone</option>
+        <option value="meeting">Meeting</option>
+        <option value="session">Session</option>
+        <option value="note">Note</option>
+        <option value="referral">Referral</option>
+      </select>
+      <button class="btn btn-primary" id="btn-log-interaction">+ Log Interaction</button>
+    </div>
+
+    <div id="interactions-content">
+      <div class="crm-loading"><div class="spinner"></div> Loading interactions...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CONTACT MODAL ═══════════════ -->
+  <div class="modal-overlay" id="contact-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="contact-modal-title">Add Contact</h2>
+        <button class="modal-close" data-close="contact-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="contact-form-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="contact-first-name">First Name</label>
+            <input type="text" class="input" id="contact-first-name" placeholder="First name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="contact-last-name">Last Name</label>
+            <input type="text" class="input" id="contact-last-name" placeholder="Last name" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="contact-email">Email</label>
+            <input type="email" class="input" id="contact-email" placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="contact-phone">Phone</label>
+            <input type="tel" class="input" id="contact-phone" placeholder="(606) 555-0100">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="contact-org">Organization</label>
+            <select class="select" id="contact-org">
+              <option value="">-- None --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="contact-status">Status</label>
+            <select class="select" id="contact-status">
+              <option value="prospect">Prospect</option>
+              <option value="active">Active</option>
+              <option value="enrolled">Enrolled</option>
+              <option value="completed">Completed</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="contact-tags">Tags</label>
+          <input type="text" class="input" id="contact-tags" placeholder="youth, WIOA eligible, Floyd County (comma-separated)">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="contact-notes">Notes</label>
+          <textarea class="textarea" id="contact-notes" rows="3" placeholder="Notes about this contact..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="contact-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-contact">Save Contact</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ ORGANIZATION MODAL ═══════════════ -->
+  <div class="modal-overlay" id="org-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="org-modal-title">Add Organization</h2>
+        <button class="modal-close" data-close="org-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="org-form-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="org-name">Name</label>
+            <input type="text" class="input" id="org-name" placeholder="Organization name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="org-type">Type</label>
+            <select class="select" id="org-type">
+              <option value="school">School</option>
+              <option value="nonprofit">Nonprofit</option>
+              <option value="employer">Employer</option>
+              <option value="government">Government</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="org-county">County</label>
+            <input type="text" class="input" id="org-county" placeholder="e.g. Floyd, Pike, Letcher">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="org-phone">Phone</label>
+            <input type="tel" class="input" id="org-phone" placeholder="(606) 555-0100">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="org-address">Address</label>
+          <input type="text" class="input" id="org-address" placeholder="Full address">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="org-website">Website</label>
+          <input type="url" class="input" id="org-website" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="org-notes">Notes</label>
+          <textarea class="textarea" id="org-notes" rows="3" placeholder="Notes about this organization..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="org-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-org">Save Organization</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ INTERACTION MODAL ═══════════════ -->
+  <div class="modal-overlay" id="interaction-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Log Interaction</h2>
+        <button class="modal-close" data-close="interaction-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group searchable-dropdown">
+          <label class="form-label" for="interaction-contact-search">Contact</label>
+          <input type="text" class="input" id="interaction-contact-search" placeholder="Search for a contact..." autocomplete="off">
+          <input type="hidden" id="interaction-contact-id">
+          <div class="searchable-dropdown-list" id="interaction-contact-list"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="interaction-type">Type</label>
+            <select class="select" id="interaction-type">
+              <option value="email">Email</option>
+              <option value="phone">Phone</option>
+              <option value="meeting">Meeting</option>
+              <option value="session">Session</option>
+              <option value="note">Note</option>
+              <option value="referral">Referral</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="interaction-date">Date</label>
+            <input type="datetime-local" class="input" id="interaction-date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="interaction-notes">Notes</label>
+          <textarea class="textarea" id="interaction-notes" rows="4" placeholder="Details of this interaction..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="interaction-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-interaction">Save Interaction</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ CONTACT DETAIL SLIDE-OUT ═══════════════ -->
+  <div class="detail-overlay" id="contact-detail-overlay"></div>
+  <div class="detail-panel" id="contact-detail-panel">
+    <div class="detail-header">
+      <div>
+        <h2 id="detail-name"></h2>
+        <p id="detail-org"></p>
+      </div>
+      <button class="modal-close" id="close-detail">&times;</button>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══════════════ APPLICATION LOGIC ═══════════════ -->
+  <script type="module">
+    import { requireAuth, getRole } from '/shared/auth.js';
+    import { renderNav } from '/shared/nav.js';
+    import {
+      getContacts, saveContact, deleteContact,
+      getOrgs, saveOrg, getOrg,
+      getInteractions, saveInteraction
+    } from '/shared/store.js';
+
+    // ── Auth + Nav ──
+    const user = await requireAuth(['facilitator', 'partner', 'admin']);
+    await renderNav('crm');
+    const currentRole = await getRole();
+
+    // ── State ──
+    let allContacts = [];
+    let allOrgs = [];
+    let allInteractions = [];
+    let orgMap = {};        // id -> org
+    let contactMap = {};    // id -> contact
+
+    // ── Helpers ──
+
+    function $(sel) { return document.querySelector(sel); }
+    function $$(sel) { return document.querySelectorAll(sel); }
+
+    function esc(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function toast(message, type = 'success') {
+      const container = $('#toast-container');
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '--';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return '--';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit'
+      });
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function contactDisplayName(c) {
+      return `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed';
+    }
+
+    function getOrgName(orgId) {
+      return orgMap[orgId]?.name || '';
+    }
+
+    function getContactName(contactId) {
+      const c = contactMap[contactId];
+      return c ? contactDisplayName(c) : 'Unknown';
+    }
+
+    // ── Data Loading ──
+
+    async function loadAll() {
+      const [contactsRes, orgsRes, interactionsRes] = await Promise.all([
+        getContacts(),
+        getOrgs(),
+        getInteractions()
+      ]);
+
+      allContacts = contactsRes.data || [];
+      allOrgs = orgsRes.data || [];
+      allInteractions = interactionsRes.data || [];
+
+      orgMap = {};
+      allOrgs.forEach(o => orgMap[o.id] = o);
+
+      contactMap = {};
+      allContacts.forEach(c => contactMap[c.id] = c);
+
+      updateStats();
+      populateOrgDropdowns();
+      renderContacts();
+      renderOrgs();
+      renderInteractions();
+    }
+
+    function updateStats() {
+      $('#stat-contacts').textContent = allContacts.length;
+      $('#stat-orgs').textContent = allOrgs.length;
+      $('#stat-interactions').textContent = allInteractions.length;
+      $('#tab-count-contacts').textContent = allContacts.length;
+      $('#tab-count-orgs').textContent = allOrgs.length;
+      $('#tab-count-interactions').textContent = allInteractions.length;
+    }
+
+    function populateOrgDropdowns() {
+      const options = allOrgs.map(o => `<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('');
+
+      $('#contact-org-filter').innerHTML = '<option value="">All Organizations</option>' + options;
+      $('#contact-org').innerHTML = '<option value="">-- None --</option>' + options;
+    }
+
+    // ── Contacts Rendering ──
+
+    function getFilteredContacts() {
+      const search = ($('#contact-search').value || '').toLowerCase();
+      const status = $('#contact-status-filter').value;
+      const orgId = $('#contact-org-filter').value;
+
+      return allContacts.filter(c => {
+        if (search) {
+          const full = `${c.first_name} ${c.last_name} ${c.email}`.toLowerCase();
+          if (!full.includes(search)) return false;
+        }
+        if (status && c.status !== status) return false;
+        if (orgId && c.org_id !== orgId) return false;
+        return true;
+      });
+    }
+
+    function getLastInteraction(contactId) {
+      const ix = allInteractions.filter(i => i.contact_id === contactId);
+      if (!ix.length) return null;
+      ix.sort((a, b) => new Date(b.occurred_at || b.created_at) - new Date(a.occurred_at || a.created_at));
+      return ix[0];
+    }
+
+    function renderContacts() {
+      const filtered = getFilteredContacts();
+      const container = $('#contacts-content');
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2689;</div>
+            <h3>No contacts found</h3>
+            <p>${allContacts.length ? 'Try adjusting your search or filters.' : 'Add your first contact to get started.'}</p>
+            ${!allContacts.length ? '<button class="btn btn-primary" onclick="document.getElementById(\'btn-add-contact\').click()">+ Add Contact</button>' : ''}
+          </div>`;
+        return;
+      }
+
+      const rows = filtered.map(c => {
+        const lastIx = getLastInteraction(c.id);
+        const lastDate = lastIx ? formatDate(lastIx.occurred_at || lastIx.created_at) : '--';
+        const orgName = getOrgName(c.org_id);
+
+        return `
+          <tr data-contact-id="${esc(c.id)}">
+            <td>
+              <div class="contact-name">${esc(contactDisplayName(c))}</div>
+            </td>
+            <td><span class="contact-email">${esc(c.email || '--')}</span></td>
+            <td><span class="contact-phone">${esc(c.phone || '--')}</span></td>
+            <td>${orgName ? `<span class="org-badge">${esc(orgName)}</span>` : '<span class="text-faint">--</span>'}</td>
+            <td><span class="status-pill status-${esc(c.status || 'prospect')}">${esc(c.status || 'prospect')}</span></td>
+            <td><span class="last-contact-date">${lastDate}</span></td>
+            <td class="actions-cell">
+              <button class="btn btn-ghost btn-sm btn-view-contact" data-id="${esc(c.id)}" title="View details">&#x2690;</button>
+              <button class="btn btn-ghost btn-sm btn-edit-contact" data-id="${esc(c.id)}" title="Edit">&#x270E;</button>
+              <button class="btn btn-danger btn-sm btn-delete-contact" data-id="${esc(c.id)}" title="Delete">&times;</button>
+            </td>
+          </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Organization</th>
+                <th>Status</th>
+                <th>Last Contact</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+
+      // Attach event listeners
+      container.querySelectorAll('.btn-view-contact').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openContactDetail(btn.dataset.id);
+        });
+      });
+
+      container.querySelectorAll('.btn-edit-contact').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEditContact(btn.dataset.id);
+        });
+      });
+
+      container.querySelectorAll('.btn-delete-contact').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          confirmDeleteContact(btn.dataset.id);
+        });
+      });
+
+      // Row click opens detail
+      container.querySelectorAll('tr[data-contact-id]').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', () => openContactDetail(row.dataset.contactId));
+      });
+    }
+
+    // ── Contact Detail Panel ──
+
+    function openContactDetail(contactId) {
+      const c = contactMap[contactId];
+      if (!c) return;
+
+      const orgName = getOrgName(c.org_id);
+      $('#detail-name').textContent = contactDisplayName(c);
+      $('#detail-org').textContent = orgName || 'No organization';
+
+      const tags = (c.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+      const contactInteractions = allInteractions
+        .filter(i => i.contact_id === contactId)
+        .sort((a, b) => new Date(b.occurred_at || b.created_at) - new Date(a.occurred_at || a.created_at));
+
+      let html = `
+        <div class="detail-section">
+          <h3>Contact Information</h3>
+          <div class="detail-field">
+            <span class="detail-field-label">Email</span>
+            <span class="detail-field-value">${esc(c.email || '--')}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Phone</span>
+            <span class="detail-field-value">${esc(c.phone || '--')}</span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Status</span>
+            <span class="detail-field-value"><span class="status-pill status-${esc(c.status || 'prospect')}">${esc(c.status || 'prospect')}</span></span>
+          </div>
+          <div class="detail-field">
+            <span class="detail-field-label">Organization</span>
+            <span class="detail-field-value">${esc(orgName || '--')}</span>
+          </div>
+        </div>`;
+
+      if (tags.length) {
+        html += `
+          <div class="detail-section">
+            <h3>Tags</h3>
+            <div class="detail-tags">
+              ${tags.map(t => `<span class="detail-tag">${esc(t)}</span>`).join('')}
+            </div>
+          </div>`;
+      }
+
+      if (c.notes) {
+        html += `
+          <div class="detail-section">
+            <h3>Notes</h3>
+            <div class="detail-notes">${esc(c.notes)}</div>
+          </div>`;
+      }
+
+      html += `
+        <div class="detail-section">
+          <h3>Interaction History (${contactInteractions.length})</h3>`;
+
+      if (contactInteractions.length) {
+        html += '<div class="timeline">';
+        contactInteractions.forEach(ix => {
+          const type = ix.type || 'note';
+          html += `
+            <div class="timeline-item">
+              <div class="timeline-dot timeline-dot-${esc(type)}"></div>
+              <div class="timeline-card">
+                <div class="timeline-card-header">
+                  <span class="timeline-type timeline-type-${esc(type)}">${esc(type)}</span>
+                  <span class="timeline-date">${formatDateTime(ix.occurred_at || ix.created_at)}</span>
+                </div>
+                ${ix.notes ? `<div class="timeline-notes">${esc(ix.notes)}</div>` : ''}
+              </div>
+            </div>`;
+        });
+        html += '</div>';
+      } else {
+        html += '<p class="text-dim text-sm">No interactions logged yet.</p>';
+      }
+
+      html += '</div>';
+
+      $('#detail-body').innerHTML = html;
+      $('#contact-detail-overlay').classList.add('open');
+      $('#contact-detail-panel').classList.add('open');
+    }
+
+    function closeContactDetail() {
+      $('#contact-detail-overlay').classList.remove('open');
+      $('#contact-detail-panel').classList.remove('open');
+    }
+
+    // ── Contact CRUD ──
+
+    function openAddContact() {
+      $('#contact-modal-title').textContent = 'Add Contact';
+      $('#contact-form-id').value = '';
+      $('#contact-first-name').value = '';
+      $('#contact-last-name').value = '';
+      $('#contact-email').value = '';
+      $('#contact-phone').value = '';
+      $('#contact-org').value = '';
+      $('#contact-status').value = 'prospect';
+      $('#contact-tags').value = '';
+      $('#contact-notes').value = '';
+      openModal('contact-modal');
+    }
+
+    function openEditContact(contactId) {
+      const c = contactMap[contactId];
+      if (!c) return;
+
+      $('#contact-modal-title').textContent = 'Edit Contact';
+      $('#contact-form-id').value = c.id;
+      $('#contact-first-name').value = c.first_name || '';
+      $('#contact-last-name').value = c.last_name || '';
+      $('#contact-email').value = c.email || '';
+      $('#contact-phone').value = c.phone || '';
+      $('#contact-org').value = c.org_id || '';
+      $('#contact-status').value = c.status || 'prospect';
+      $('#contact-tags').value = c.tags || '';
+      $('#contact-notes').value = c.notes || '';
+      openModal('contact-modal');
+    }
+
+    async function handleSaveContact() {
+      const firstName = $('#contact-first-name').value.trim();
+      const lastName = $('#contact-last-name').value.trim();
+
+      if (!firstName && !lastName) {
+        toast('Please enter at least a first or last name.', 'error');
+        return;
+      }
+
+      const data = {
+        first_name: firstName,
+        last_name: lastName,
+        email: $('#contact-email').value.trim(),
+        phone: $('#contact-phone').value.trim(),
+        org_id: $('#contact-org').value || null,
+        status: $('#contact-status').value,
+        tags: $('#contact-tags').value.trim(),
+        notes: $('#contact-notes').value.trim()
+      };
+
+      const id = $('#contact-form-id').value;
+      if (id) data.id = id;
+
+      const { error } = await saveContact(data);
+      if (error) {
+        toast('Failed to save contact: ' + (error.message || 'Unknown error'), 'error');
+        return;
+      }
+
+      closeModal('contact-modal');
+      toast(id ? 'Contact updated.' : 'Contact created.');
+      await loadAll();
+    }
+
+    function confirmDeleteContact(contactId) {
+      const c = contactMap[contactId];
+      if (!c) return;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-box">
+          <h3>Delete Contact</h3>
+          <p>Remove <strong>${esc(contactDisplayName(c))}</strong>? This cannot be undone.</p>
+          <div class="confirm-actions">
+            <button class="btn btn-ghost btn-confirm-cancel">Cancel</button>
+            <button class="btn btn-danger btn-confirm-delete">Delete</button>
+          </div>
+        </div>`;
+
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('.btn-confirm-cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('.btn-confirm-delete').addEventListener('click', async () => {
+        overlay.remove();
+        const { error } = await deleteContact(contactId);
+        if (error) {
+          toast('Failed to delete contact.', 'error');
+          return;
+        }
+        toast('Contact deleted.');
+        closeContactDetail();
+        await loadAll();
+      });
+    }
+
+    // ── Organizations Rendering ──
+
+    function getFilteredOrgs() {
+      const search = ($('#org-search').value || '').toLowerCase();
+      const type = $('#org-type-filter').value;
+
+      return allOrgs.filter(o => {
+        if (search && !o.name.toLowerCase().includes(search)) return false;
+        if (type && o.type !== type) return false;
+        return true;
+      });
+    }
+
+    function getOrgContactCount(orgId) {
+      return allContacts.filter(c => c.org_id === orgId).length;
+    }
+
+    function renderOrgs() {
+      const filtered = getFilteredOrgs();
+      const container = $('#orgs-content');
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2302;</div>
+            <h3>No organizations found</h3>
+            <p>${allOrgs.length ? 'Try adjusting your search or filters.' : 'Add your first organization to get started.'}</p>
+            ${!allOrgs.length ? '<button class="btn btn-primary" onclick="document.getElementById(\'btn-add-org\').click()">+ Add Organization</button>' : ''}
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '<div class="org-cards">' + filtered.map(o => {
+        const count = getOrgContactCount(o.id);
+        return `
+          <div class="org-card" data-org-id="${esc(o.id)}">
+            <div class="org-card-header">
+              <div class="org-card-name">${esc(o.name)}</div>
+              <span class="org-type-badge org-type-${esc(o.type || 'other')}">${esc(o.type || 'other')}</span>
+            </div>
+            <div class="org-card-meta">
+              ${o.county ? `<span>&#x25CB; ${esc(o.county)} County</span>` : ''}
+              ${o.phone ? `<span>&#x260E; ${esc(o.phone)}</span>` : ''}
+              ${o.website ? `<span>&#x26AD; <a href="${esc(o.website)}" target="_blank" rel="noopener" style="color:var(--cyan);text-decoration:none;">${esc(o.website.replace(/^https?:\/\//, ''))}</a></span>` : ''}
+            </div>
+            <div class="org-card-footer">
+              <span class="org-contact-count">${count} contact${count !== 1 ? 's' : ''}</span>
+              <div class="actions-cell">
+                <button class="btn btn-ghost btn-sm btn-edit-org" data-id="${esc(o.id)}" title="Edit">&#x270E;</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('') + '</div>';
+
+      container.querySelectorAll('.org-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-edit-org') || e.target.closest('a')) return;
+          showOrgContacts(card.dataset.orgId);
+        });
+      });
+
+      container.querySelectorAll('.btn-edit-org').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEditOrg(btn.dataset.id);
+        });
+      });
+    }
+
+    function showOrgContacts(orgId) {
+      // Switch to contacts tab, filtered by this org
+      switchTab('contacts');
+      $('#contact-org-filter').value = orgId;
+      renderContacts();
+    }
+
+    // ── Organization CRUD ──
+
+    function openAddOrg() {
+      $('#org-modal-title').textContent = 'Add Organization';
+      $('#org-form-id').value = '';
+      $('#org-name').value = '';
+      $('#org-type').value = 'school';
+      $('#org-county').value = '';
+      $('#org-phone').value = '';
+      $('#org-address').value = '';
+      $('#org-website').value = '';
+      $('#org-notes').value = '';
+      openModal('org-modal');
+    }
+
+    function openEditOrg(orgId) {
+      const o = orgMap[orgId];
+      if (!o) return;
+
+      $('#org-modal-title').textContent = 'Edit Organization';
+      $('#org-form-id').value = o.id;
+      $('#org-name').value = o.name || '';
+      $('#org-type').value = o.type || 'other';
+      $('#org-county').value = o.county || '';
+      $('#org-phone').value = o.phone || '';
+      $('#org-address').value = o.address || '';
+      $('#org-website').value = o.website || '';
+      $('#org-notes').value = o.notes || '';
+      openModal('org-modal');
+    }
+
+    async function handleSaveOrg() {
+      const name = $('#org-name').value.trim();
+      if (!name) {
+        toast('Please enter an organization name.', 'error');
+        return;
+      }
+
+      const data = {
+        name,
+        type: $('#org-type').value,
+        county: $('#org-county').value.trim(),
+        phone: $('#org-phone').value.trim(),
+        address: $('#org-address').value.trim(),
+        website: $('#org-website').value.trim(),
+        notes: $('#org-notes').value.trim()
+      };
+
+      const id = $('#org-form-id').value;
+      if (id) data.id = id;
+
+      const { error } = await saveOrg(data);
+      if (error) {
+        toast('Failed to save organization: ' + (error.message || 'Unknown error'), 'error');
+        return;
+      }
+
+      closeModal('org-modal');
+      toast(id ? 'Organization updated.' : 'Organization created.');
+      await loadAll();
+    }
+
+    // ── Interactions Rendering ──
+
+    function getFilteredInteractions() {
+      const search = ($('#interaction-search').value || '').toLowerCase();
+      const type = $('#interaction-type-filter').value;
+
+      return allInteractions.filter(ix => {
+        if (type && ix.type !== type) return false;
+        if (search) {
+          const contactName = getContactName(ix.contact_id).toLowerCase();
+          const notes = (ix.notes || '').toLowerCase();
+          if (!contactName.includes(search) && !notes.includes(search)) return false;
+        }
+        return true;
+      }).sort((a, b) => {
+        return new Date(b.occurred_at || b.created_at) - new Date(a.occurred_at || a.created_at);
+      });
+    }
+
+    function renderInteractions() {
+      const filtered = getFilteredInteractions();
+      const container = $('#interactions-content');
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2637;</div>
+            <h3>No interactions found</h3>
+            <p>${allInteractions.length ? 'Try adjusting your search or type filter.' : 'Log your first interaction to start tracking.'}</p>
+            ${!allInteractions.length ? '<button class="btn btn-primary" onclick="document.getElementById(\'btn-log-interaction\').click()">+ Log Interaction</button>' : ''}
+          </div>`;
+        return;
+      }
+
+      let html = '<div class="timeline">';
+      filtered.forEach(ix => {
+        const type = ix.type || 'note';
+        const contactName = getContactName(ix.contact_id);
+        html += `
+          <div class="timeline-item">
+            <div class="timeline-dot timeline-dot-${esc(type)}"></div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="timeline-contact">${esc(contactName)}</span>
+                <span class="timeline-date">${formatDateTime(ix.occurred_at || ix.created_at)}</span>
+              </div>
+              <div class="timeline-card-header" style="margin-bottom:var(--sp-2);">
+                <span class="timeline-type timeline-type-${esc(type)}">${esc(type)}</span>
+              </div>
+              ${ix.notes ? `<div class="timeline-notes">${esc(ix.notes)}</div>` : ''}
+            </div>
+          </div>`;
+      });
+      html += '</div>';
+
+      container.innerHTML = html;
+    }
+
+    // ── Interaction CRUD ──
+
+    function openLogInteraction(presetContactId) {
+      $('#interaction-contact-search').value = presetContactId ? getContactName(presetContactId) : '';
+      $('#interaction-contact-id').value = presetContactId || '';
+      $('#interaction-type').value = 'email';
+      $('#interaction-notes').value = '';
+
+      // Default date to now
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      $('#interaction-date').value = now.toISOString().slice(0, 16);
+
+      openModal('interaction-modal');
+    }
+
+    async function handleSaveInteraction() {
+      const contactId = $('#interaction-contact-id').value;
+      if (!contactId) {
+        toast('Please select a contact.', 'error');
+        return;
+      }
+
+      const data = {
+        contact_id: contactId,
+        type: $('#interaction-type').value,
+        notes: $('#interaction-notes').value.trim(),
+        occurred_at: $('#interaction-date').value ? new Date($('#interaction-date').value).toISOString() : new Date().toISOString()
+      };
+
+      const { error } = await saveInteraction(data);
+      if (error) {
+        toast('Failed to save interaction: ' + (error.message || 'Unknown error'), 'error');
+        return;
+      }
+
+      closeModal('interaction-modal');
+      toast('Interaction logged.');
+      await loadAll();
+    }
+
+    // ── Searchable Contact Dropdown (Interaction form) ──
+
+    function setupContactSearchDropdown() {
+      const input = $('#interaction-contact-search');
+      const list = $('#interaction-contact-list');
+      const hiddenInput = $('#interaction-contact-id');
+
+      input.addEventListener('input', () => {
+        const query = input.value.toLowerCase();
+        if (!query) {
+          list.classList.remove('open');
+          return;
+        }
+
+        const matches = allContacts.filter(c => {
+          const full = `${c.first_name} ${c.last_name} ${c.email}`.toLowerCase();
+          return full.includes(query);
+        }).slice(0, 10);
+
+        if (!matches.length) {
+          list.classList.remove('open');
+          return;
+        }
+
+        list.innerHTML = matches.map(c => `
+          <div class="searchable-dropdown-item" data-id="${esc(c.id)}">
+            ${esc(contactDisplayName(c))}
+            ${c.email ? `<span class="text-dim"> - ${esc(c.email)}</span>` : ''}
+          </div>
+        `).join('');
+        list.classList.add('open');
+
+        list.querySelectorAll('.searchable-dropdown-item').forEach(item => {
+          item.addEventListener('click', () => {
+            hiddenInput.value = item.dataset.id;
+            input.value = getContactName(item.dataset.id);
+            list.classList.remove('open');
+          });
+        });
+      });
+
+      input.addEventListener('focus', () => {
+        if (input.value) input.dispatchEvent(new Event('input'));
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.searchable-dropdown')) {
+          list.classList.remove('open');
+        }
+      });
+    }
+
+    // ── Tab Switching ──
+
+    function switchTab(tabId) {
+      $$('.crm-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tabId);
+        t.setAttribute('aria-selected', t.dataset.tab === tabId);
+      });
+      $$('.crm-panel').forEach(p => {
+        p.classList.toggle('active', p.id === `panel-${tabId}`);
+      });
+    }
+
+    // ── Event Wiring ──
+
+    // Tab clicks
+    $$('.crm-tab').forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
+
+    // Modal close buttons
+    $$('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    // Close modals on overlay click
+    $$('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal(overlay.id);
+      });
+    });
+
+    // Contact detail panel close
+    $('#close-detail').addEventListener('click', closeContactDetail);
+    $('#contact-detail-overlay').addEventListener('click', closeContactDetail);
+
+    // Keyboard: Escape closes modals/panels
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        $$('.modal-overlay.open').forEach(m => closeModal(m.id));
+        closeContactDetail();
+      }
+    });
+
+    // Action buttons
+    $('#btn-add-contact').addEventListener('click', openAddContact);
+    $('#btn-save-contact').addEventListener('click', handleSaveContact);
+    $('#btn-add-org').addEventListener('click', openAddOrg);
+    $('#btn-save-org').addEventListener('click', handleSaveOrg);
+    $('#btn-log-interaction').addEventListener('click', () => openLogInteraction());
+    $('#btn-save-interaction').addEventListener('click', handleSaveInteraction);
+
+    // Search and filter inputs with debounce
+    let searchTimeout;
+    function debounceRender(renderFn) {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(renderFn, 200);
+    }
+
+    $('#contact-search').addEventListener('input', () => debounceRender(renderContacts));
+    $('#contact-status-filter').addEventListener('change', renderContacts);
+    $('#contact-org-filter').addEventListener('change', renderContacts);
+
+    $('#org-search').addEventListener('input', () => debounceRender(renderOrgs));
+    $('#org-type-filter').addEventListener('change', renderOrgs);
+
+    $('#interaction-search').addEventListener('input', () => debounceRender(renderInteractions));
+    $('#interaction-type-filter').addEventListener('change', renderInteractions);
+
+    // Setup searchable dropdown
+    setupContactSearchDropdown();
+
+    // ── Init ──
+    await loadAll();
+  </script>
+</body>
+</html>

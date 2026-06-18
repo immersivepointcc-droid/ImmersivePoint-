@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Hub · ImmersivePoint</title>
+<link rel="stylesheet" href="/shared/theme.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Vendor Hub — Module-specific styles
+   ============================================================ */
+
+/* --- Toolbar ------------------------------------------------ */
+.vendor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-6);
+}
+
+.vendor-toolbar .input-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.vendor-toolbar .select {
+  width: auto;
+  min-width: 160px;
+}
+
+/* --- Vendor Grid -------------------------------------------- */
+.vendor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--sp-6);
+}
+
+/* --- Vendor Card -------------------------------------------- */
+.vendor-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-6);
+  position: relative;
+  cursor: pointer;
+  transition: border-color var(--transition-fast),
+              box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+  overflow: hidden;
+}
+
+.vendor-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--cyan);
+  transition: height var(--transition-fast);
+}
+
+.vendor-card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.vendor-card:hover::before {
+  height: 4px;
+}
+
+/* Category accent colors */
+.vendor-card[data-category="xr_simulation"]::before { background: var(--purple-glow); }
+.vendor-card[data-category="xr_simulation"]:hover   { box-shadow: var(--shadow-glow-purple); }
+
+.vendor-card[data-category="assessment"]::before { background: var(--cyan-glow); }
+.vendor-card[data-category="assessment"]:hover   { box-shadow: var(--shadow-glow-cyan); }
+
+.vendor-card[data-category="lms"]::before { background: var(--amber); }
+.vendor-card[data-category="lms"]:hover   { box-shadow: 0 0 20px rgba(244, 185, 66, 0.25); }
+
+.vendor-card[data-category="analytics"]::before { background: var(--success); }
+.vendor-card[data-category="analytics"]:hover   { box-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
+
+.vendor-card[data-category="workforce"]::before { background: #F472B6; }
+.vendor-card[data-category="workforce"]:hover   { box-shadow: 0 0 20px rgba(244, 114, 182, 0.25); }
+
+.vendor-card[data-category="communication"]::before { background: #60A5FA; }
+.vendor-card[data-category="communication"]:hover   { box-shadow: 0 0 20px rgba(96, 165, 250, 0.25); }
+
+.vendor-card[data-category="other"]::before { background: var(--ink-dim); }
+
+.vendor-card.inactive-card {
+  opacity: 0.6;
+}
+
+.vendor-card.inactive-card::before {
+  background: var(--ink-faint) !important;
+}
+
+.vendor-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.vendor-card-name {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.vendor-card-desc {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+  line-height: 1.55;
+  margin-bottom: var(--sp-4);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.vendor-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* --- Category Badges ---------------------------------------- */
+.badge-category {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.badge-category[data-cat="xr_simulation"] {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--purple-glow);
+}
+.badge-category[data-cat="assessment"] {
+  background: rgba(0, 180, 216, 0.15);
+  color: var(--cyan);
+}
+.badge-category[data-cat="lms"] {
+  background: rgba(244, 185, 66, 0.15);
+  color: var(--amber);
+}
+.badge-category[data-cat="analytics"] {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success);
+}
+.badge-category[data-cat="workforce"] {
+  background: rgba(244, 114, 182, 0.15);
+  color: #F472B6;
+}
+.badge-category[data-cat="communication"] {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60A5FA;
+}
+.badge-category[data-cat="other"] {
+  background: rgba(143, 163, 184, 0.15);
+  color: var(--ink-dim);
+}
+
+/* --- Integration Type Indicator ----------------------------- */
+.integration-type {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.integration-type::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--ink-faint);
+}
+
+.integration-type[data-type="api"]::before     { background: var(--cyan); }
+.integration-type[data-type="webhook"]::before  { background: var(--purple-glow); }
+.integration-type[data-type="iframe"]::before   { background: var(--amber); }
+.integration-type[data-type="manual"]::before   { background: var(--ink-dim); }
+
+/* --- Config Status ------------------------------------------ */
+.config-status {
+  font-size: 0.72rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.config-status.configured {
+  color: var(--success);
+}
+
+.config-status.needs-setup {
+  color: var(--amber);
+}
+
+.config-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.config-status.configured::before {
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}
+
+.config-status.needs-setup::before {
+  background: var(--amber);
+  box-shadow: 0 0 6px rgba(244, 185, 66, 0.5);
+}
+
+/* --- Custom Toggle Switch ----------------------------------- */
+.toggle-switch {
+  position: relative;
+  width: 42px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ink-faint);
+  transition: transform var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.toggle-switch input:checked + .toggle-track {
+  background: rgba(0, 180, 216, 0.2);
+  border-color: var(--cyan);
+}
+
+.toggle-switch input:checked + .toggle-track::after {
+  transform: translateX(20px);
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 180, 216, 0.6);
+}
+
+.toggle-switch input:focus-visible + .toggle-track {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* --- Detail View -------------------------------------------- */
+.vendor-detail {
+  animation: slideUp 0.3s ease both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.vendor-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+  flex-wrap: wrap;
+}
+
+.vendor-detail-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.vendor-detail-actions {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+}
+
+.detail-section {
+  margin-bottom: var(--sp-6);
+}
+
+.detail-section-label {
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.detail-section-label::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: var(--cyan);
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-4);
+}
+
+.config-item {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+}
+
+.config-item-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--sp-2);
+}
+
+.config-item-value {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.config-item-value.masked {
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+}
+
+/* --- Connection Test ---------------------------------------- */
+.connection-test-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.connection-test-btn.testing {
+  pointer-events: none;
+}
+
+.connection-test-btn.testing::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 180, 216, 0.25),
+    transparent
+  );
+  animation: testSweep 1s ease-in-out infinite;
+}
+
+@keyframes testSweep {
+  from { left: -100%; }
+  to   { left: 100%; }
+}
+
+.connection-test-btn.success {
+  border-color: var(--success) !important;
+  color: var(--success) !important;
+  background: rgba(34, 197, 94, 0.1) !important;
+}
+
+.connection-test-btn.failure {
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* --- Activity Log Placeholder ------------------------------- */
+.activity-log {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+
+.activity-log .placeholder-icon {
+  font-size: 2rem;
+  margin-bottom: var(--sp-2);
+  opacity: 0.4;
+}
+
+/* --- Modal -------------------------------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideUp 0.3s ease both;
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: var(--sp-1);
+  transition: color var(--transition-fast);
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--ink);
+}
+
+.modal-body {
+  padding: var(--sp-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--border);
+}
+
+/* --- Empty State -------------------------------------------- */
+.empty-state {
+  text-align: center;
+  padding: var(--sp-16) var(--sp-6);
+  color: var(--ink-faint);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: var(--sp-4);
+  opacity: 0.3;
+}
+
+.empty-state-text {
+  font-size: 0.95rem;
+  margin-bottom: var(--sp-2);
+}
+
+.empty-state-hint {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+/* --- Breadcrumb --------------------------------------------- */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 0.82rem;
+  margin-bottom: var(--sp-4);
+}
+
+.breadcrumb-link {
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+}
+
+.breadcrumb-link:hover {
+  color: var(--cyan);
+}
+
+.breadcrumb-sep {
+  color: var(--ink-faint);
+  font-size: 0.7rem;
+}
+
+.breadcrumb-current {
+  color: var(--ink-dim);
+}
+
+/* --- Notes/Description textarea ----------------------------- */
+.textarea {
+  font-family: var(--font-body);
+}
+
+.textarea-json {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  min-height: 100px;
+}
+
+/* --- Responsive --------------------------------------------- */
+@media (max-width: 768px) {
+  .vendor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vendor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vendor-toolbar .select {
+    width: 100%;
+  }
+
+  .vendor-detail-header {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- Content injected by renderNav -->
+<div id="vendor-app">
+
+  <!-- Registry View -->
+  <div id="view-registry">
+    <div class="flex items-center justify-between gap-4 mb-6" style="flex-wrap:wrap">
+      <div>
+        <h2 style="margin-bottom:var(--sp-1)">Vendor Registry</h2>
+        <p class="text-dim text-sm">Manage third-party integrations and partnerships</p>
+      </div>
+      <button class="btn btn-primary" id="btn-register" style="display:none">+ Register Vendor</button>
+    </div>
+
+    <div class="vendor-toolbar">
+      <input type="text" class="input input-search" id="search-input" placeholder="Search vendors..." autocomplete="off">
+      <select class="select" id="filter-category">
+        <option value="">All Categories</option>
+        <option value="xr_simulation">XR Simulation</option>
+        <option value="assessment">Assessment</option>
+        <option value="lms">LMS</option>
+        <option value="analytics">Analytics</option>
+        <option value="workforce">Workforce</option>
+        <option value="communication">Communication</option>
+        <option value="other">Other</option>
+      </select>
+      <select class="select" id="filter-status">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    <div class="vendor-grid" id="vendor-grid"></div>
+    <div id="empty-state" class="empty-state hidden">
+      <div class="empty-state-icon">&#9014;</div>
+      <div class="empty-state-text">No vendors found</div>
+      <div class="empty-state-hint">Try adjusting your search or filters</div>
+    </div>
+  </div>
+
+  <!-- Detail View -->
+  <div id="view-detail" class="hidden"></div>
+
+</div>
+
+<!-- Register / Edit Modal -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title">Register Vendor</h3>
+      <button class="modal-close" id="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="form-id">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="input" id="form-name" placeholder="Vendor name" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category *</label>
+        <select class="select" id="form-category">
+          <option value="xr_simulation">XR Simulation</option>
+          <option value="assessment">Assessment</option>
+          <option value="lms">LMS</option>
+          <option value="analytics">Analytics</option>
+          <option value="workforce">Workforce</option>
+          <option value="communication">Communication</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Integration Type *</label>
+        <select class="select" id="form-integration-type">
+          <option value="api">API</option>
+          <option value="webhook">Webhook</option>
+          <option value="iframe">iFrame</option>
+          <option value="manual">Manual</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="input textarea" id="form-description" rows="3" placeholder="Brief description of the vendor integration..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Endpoint URL</label>
+        <input type="url" class="input" id="form-endpoint" placeholder="https://api.example.com/v1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">API Key</label>
+        <input type="password" class="input" id="form-apikey" placeholder="sk-...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Webhook URL</label>
+        <input type="url" class="input" id="form-webhook" placeholder="https://hooks.example.com/...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Config (JSON)</label>
+        <textarea class="input textarea textarea-json" id="form-config" rows="4" placeholder='{ "key": "value" }'></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="input textarea" id="form-notes" rows="2" placeholder="Internal notes..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-save">Save Vendor</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { requireAuth, getRole } from '/shared/auth.js';
+import { renderNav } from '/shared/nav.js';
+import { getVendors, saveVendor, getVendor, toggleVendor } from '/shared/store.js';
+
+/* ============================================================
+   State
+   ============================================================ */
+let currentRole = 'user';
+let allVendors = [];
+let currentView = 'registry'; // 'registry' | 'detail'
+let currentVendorId = null;
+
+/* ============================================================
+   Category & Type Helpers
+   ============================================================ */
+const CATEGORY_LABELS = {
+  xr_simulation:  'XR Simulation',
+  assessment:     'Assessment',
+  lms:            'LMS',
+  analytics:      'Analytics',
+  workforce:      'Workforce',
+  communication:  'Communication',
+  other:          'Other',
+};
+
+const TYPE_LABELS = {
+  api:     'API',
+  webhook: 'Webhook',
+  iframe:  'iFrame',
+  manual:  'Manual',
+};
+
+/* ============================================================
+   Seed Data
+   ============================================================ */
+const SEED_VENDORS = [
+  {
+    name: 'Modal AI',
+    category: 'assessment',
+    integration_type: 'api',
+    description: 'AI-powered career assessment and content generation',
+    endpoint_url: 'https://api.modal-ai.example.com/v1',
+    api_key: 'sk-modal-demo-key-xxxx',
+    webhook_url: '',
+    config: '{}',
+    notes: 'Primary assessment engine for Imagination Spark',
+    active: true,
+  },
+  {
+    name: 'IMMERSE XR',
+    category: 'xr_simulation',
+    integration_type: 'api',
+    description: 'Virtual reality career simulation platform',
+    endpoint_url: 'https://api.immersexr.example.com/v2',
+    api_key: 'sk-immerse-demo-key-xxxx',
+    webhook_url: 'https://hooks.immersexr.example.com/events',
+    config: '{ "headset_compat": ["quest3", "pico4"], "render_quality": "high" }',
+    notes: 'XR simulation provider for FutureForge sessions',
+    active: true,
+  },
+  {
+    name: 'FutureForge LMS',
+    category: 'lms',
+    integration_type: 'iframe',
+    description: 'Learning management for the 4-session FutureForge program',
+    endpoint_url: 'https://lms.futureforge.example.com',
+    api_key: '',
+    webhook_url: '',
+    config: '{ "embed_path": "/embed/course", "sso_enabled": false }',
+    notes: 'Pending SSO integration setup',
+    active: false,
+  },
+];
+
+async function seedIfEmpty() {
+  const { data } = await getVendors();
+  if (!data || data.length === 0) {
+    for (const v of SEED_VENDORS) {
+      await saveVendor(v);
+    }
+  }
+}
+
+/* ============================================================
+   Init
+   ============================================================ */
+async function init() {
+  await requireAuth(['partner', 'admin']);
+  await renderNav('vendors');
+  currentRole = await getRole();
+
+  // Show register button for admins
+  if (currentRole === 'admin') {
+    document.getElementById('btn-register').style.display = '';
+  }
+
+  await seedIfEmpty();
+  await loadVendors();
+  bindEvents();
+}
+
+/* ============================================================
+   Data Loading
+   ============================================================ */
+async function loadVendors() {
+  const { data, error } = await getVendors();
+  if (error) {
+    console.error('Failed to load vendors:', error);
+    allVendors = [];
+  } else {
+    allVendors = data || [];
+  }
+  renderRegistry();
+}
+
+/* ============================================================
+   Registry Rendering
+   ============================================================ */
+function renderRegistry() {
+  const search = document.getElementById('search-input').value.toLowerCase().trim();
+  const catFilter = document.getElementById('filter-category').value;
+  const statusFilter = document.getElementById('filter-status').value;
+
+  let filtered = allVendors.filter(v => {
+    if (search && !v.name.toLowerCase().includes(search) && !(v.description || '').toLowerCase().includes(search)) {
+      return false;
+    }
+    if (catFilter && v.category !== catFilter) return false;
+    if (statusFilter === 'active' && !v.active) return false;
+    if (statusFilter === 'inactive' && v.active) return false;
+    return true;
+  });
+
+  const grid = document.getElementById('vendor-grid');
+  const empty = document.getElementById('empty-state');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  empty.classList.add('hidden');
+
+  grid.innerHTML = filtered.map(v => {
+    const isConfigured = v.endpoint_url || v.api_key || v.webhook_url;
+    const configClass = isConfigured ? 'configured' : 'needs-setup';
+    const configLabel = isConfigured ? 'Configured' : 'Needs Setup';
+    const cardClass = v.active ? '' : ' inactive-card';
+
+    return `
+      <div class="vendor-card${cardClass}" data-category="${v.category}" data-id="${v.id}">
+        <div class="vendor-card-header">
+          <div>
+            <div class="vendor-card-name">${esc(v.name)}</div>
+          </div>
+          <label class="toggle-switch" title="${v.active ? 'Active' : 'Inactive'}" onclick="event.stopPropagation()">
+            <input type="checkbox" ${v.active ? 'checked' : ''} data-toggle-id="${v.id}">
+            <span class="toggle-track"></span>
+          </label>
+        </div>
+        <div class="vendor-card-desc">${esc(v.description || 'No description')}</div>
+        <div class="vendor-card-meta">
+          <span class="badge-category" data-cat="${v.category}">${CATEGORY_LABELS[v.category] || v.category}</span>
+          <span class="integration-type" data-type="${v.integration_type}">${TYPE_LABELS[v.integration_type] || v.integration_type}</span>
+          <span class="config-status ${configClass}">${configLabel}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Bind card clicks
+  grid.querySelectorAll('.vendor-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.id;
+      showDetail(id);
+    });
+  });
+
+  // Bind toggle switches
+  grid.querySelectorAll('[data-toggle-id]').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const id = e.target.dataset.toggleId;
+      const active = e.target.checked;
+      await toggleVendor(id, active);
+      await loadVendors();
+    });
+  });
+}
+
+/* ============================================================
+   Detail View
+   ============================================================ */
+async function showDetail(id) {
+  const { data: vendor, error } = await getVendor(id);
+  if (error || !vendor) {
+    console.error('Vendor not found:', error);
+    return;
+  }
+
+  currentVendorId = id;
+  currentView = 'detail';
+
+  document.getElementById('view-registry').classList.add('hidden');
+  const detailEl = document.getElementById('view-detail');
+  detailEl.classList.remove('hidden');
+
+  const isConfigured = vendor.endpoint_url || vendor.api_key || vendor.webhook_url;
+  const configClass = isConfigured ? 'configured' : 'needs-setup';
+  const configLabel = isConfigured ? 'Configured' : 'Needs Setup';
+
+  const maskedKey = vendor.api_key
+    ? vendor.api_key.substring(0, 6) + '...' + '*'.repeat(12)
+    : '(not set)';
+
+  const adminActions = currentRole === 'admin' ? `
+    <button class="btn btn-ghost btn-sm" id="detail-edit">Edit</button>
+    <button class="btn btn-danger btn-sm" id="detail-delete">Delete</button>
+  ` : '';
+
+  let configJson = '';
+  try {
+    const parsed = JSON.parse(vendor.config || '{}');
+    configJson = JSON.stringify(parsed, null, 2);
+  } catch {
+    configJson = vendor.config || '{}';
+  }
+
+  detailEl.innerHTML = `
+    <div class="vendor-detail">
+      <div class="breadcrumb">
+        <button class="breadcrumb-link" id="back-to-registry">Vendor Registry</button>
+        <span class="breadcrumb-sep">&#9656;</span>
+        <span class="breadcrumb-current">${esc(vendor.name)}</span>
+      </div>
+
+      <div class="vendor-detail-header">
+        <div>
+          <div class="vendor-detail-title">${esc(vendor.name)}</div>
+          <div class="flex items-center gap-3 mt-2">
+            <span class="badge-category" data-cat="${vendor.category}">${CATEGORY_LABELS[vendor.category] || vendor.category}</span>
+            <span class="integration-type" data-type="${vendor.integration_type}">${TYPE_LABELS[vendor.integration_type] || vendor.integration_type}</span>
+            <span class="config-status ${configClass}">${configLabel}</span>
+            <span class="badge ${vendor.active ? 'badge-success' : 'badge-danger'}">${vendor.active ? 'Active' : 'Inactive'}</span>
+          </div>
+        </div>
+        <div class="vendor-detail-actions">
+          <label class="toggle-switch" title="${vendor.active ? 'Active' : 'Inactive'}">
+            <input type="checkbox" ${vendor.active ? 'checked' : ''} id="detail-toggle">
+            <span class="toggle-track"></span>
+          </label>
+          ${adminActions}
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Description</div>
+        <p class="text-dim" style="line-height:1.65">${esc(vendor.description || 'No description provided.')}</p>
+        ${vendor.notes ? `<p class="text-faint text-sm mt-2"><strong>Notes:</strong> ${esc(vendor.notes)}</p>` : ''}
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Configuration</div>
+        <div class="config-grid">
+          <div class="config-item">
+            <div class="config-item-label">Endpoint URL</div>
+            <div class="config-item-value">${esc(vendor.endpoint_url || '(not set)')}</div>
+          </div>
+          <div class="config-item">
+            <div class="config-item-label">API Key</div>
+            <div class="config-item-value masked">${esc(maskedKey)}</div>
+          </div>
+          <div class="config-item">
+            <div class="config-item-label">Webhook URL</div>
+            <div class="config-item-value">${esc(vendor.webhook_url || '(not set)')}</div>
+          </div>
+          <div class="config-item">
+            <div class="config-item-label">Config</div>
+            <pre class="config-item-value" style="white-space:pre-wrap;font-size:0.78rem">${esc(configJson)}</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Connection Test</div>
+        <button class="btn btn-ghost connection-test-btn" id="btn-test-connection">
+          Test Connection
+        </button>
+        <span id="test-result" class="text-sm ml-3" style="margin-left:var(--sp-3)"></span>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-section-label">Activity Log</div>
+        <div class="activity-log">
+          <div class="placeholder-icon">&#128203;</div>
+          <div>Activity logging coming soon.</div>
+          <div class="text-xs mt-2">Integration events and status changes will appear here.</div>
+        </div>
+      </div>
+
+      <div class="text-faint text-xs mt-6" style="font-family:var(--font-mono)">
+        ID: ${vendor.id} &middot;
+        Created: ${vendor.created_at ? new Date(vendor.created_at).toLocaleString() : 'N/A'} &middot;
+        Updated: ${vendor.updated_at ? new Date(vendor.updated_at).toLocaleString() : 'N/A'}
+      </div>
+    </div>
+  `;
+
+  // Bind detail events
+  detailEl.querySelector('#back-to-registry').addEventListener('click', backToRegistry);
+
+  detailEl.querySelector('#detail-toggle').addEventListener('change', async (e) => {
+    await toggleVendor(id, e.target.checked);
+    await loadVendors();
+    showDetail(id);
+  });
+
+  detailEl.querySelector('#btn-test-connection').addEventListener('click', (e) => {
+    runConnectionTest(e.target);
+  });
+
+  if (currentRole === 'admin') {
+    detailEl.querySelector('#detail-edit')?.addEventListener('click', () => {
+      openModal(vendor);
+    });
+    detailEl.querySelector('#detail-delete')?.addEventListener('click', async () => {
+      if (confirm(`Delete vendor "${vendor.name}"? This cannot be undone.`)) {
+        // Delete by saving with a _deleted flag, or use store remove
+        // Store doesn't expose delete for vendors, so we simulate by removing from localStorage
+        const raw = JSON.parse(localStorage.getItem('ip_vendors') || '[]');
+        const updated = raw.filter(v => v.id !== id);
+        localStorage.setItem('ip_vendors', JSON.stringify(updated));
+        await loadVendors();
+        backToRegistry();
+      }
+    });
+  }
+}
+
+function backToRegistry() {
+  currentView = 'registry';
+  currentVendorId = null;
+  document.getElementById('view-detail').classList.add('hidden');
+  document.getElementById('view-detail').innerHTML = '';
+  document.getElementById('view-registry').classList.remove('hidden');
+}
+
+/* ============================================================
+   Connection Test
+   ============================================================ */
+function runConnectionTest(btn) {
+  const resultEl = document.getElementById('test-result');
+  btn.classList.add('testing');
+  btn.classList.remove('success', 'failure');
+  btn.textContent = 'Testing...';
+  resultEl.textContent = '';
+
+  // Simulated test with random delay
+  const delay = 1200 + Math.random() * 800;
+  setTimeout(() => {
+    btn.classList.remove('testing');
+    // 85% chance of success for demo
+    const success = Math.random() < 0.85;
+    if (success) {
+      btn.classList.add('success');
+      btn.textContent = 'Connected';
+      resultEl.style.color = 'var(--success)';
+      resultEl.textContent = 'Connection established successfully (' + Math.floor(delay) + 'ms)';
+    } else {
+      btn.classList.add('failure');
+      btn.textContent = 'Failed';
+      resultEl.style.color = 'var(--danger)';
+      resultEl.textContent = 'Connection timed out. Check endpoint and credentials.';
+    }
+
+    // Reset after 4 seconds
+    setTimeout(() => {
+      btn.classList.remove('success', 'failure');
+      btn.textContent = 'Test Connection';
+      resultEl.textContent = '';
+    }, 4000);
+  }, delay);
+}
+
+/* ============================================================
+   Modal (Register / Edit)
+   ============================================================ */
+function openModal(vendor = null) {
+  const overlay = document.getElementById('modal-overlay');
+  const title = document.getElementById('modal-title');
+
+  if (vendor) {
+    title.textContent = 'Edit Vendor';
+    document.getElementById('form-id').value = vendor.id || '';
+    document.getElementById('form-name').value = vendor.name || '';
+    document.getElementById('form-category').value = vendor.category || 'other';
+    document.getElementById('form-integration-type').value = vendor.integration_type || 'api';
+    document.getElementById('form-description').value = vendor.description || '';
+    document.getElementById('form-endpoint').value = vendor.endpoint_url || '';
+    document.getElementById('form-apikey').value = vendor.api_key || '';
+    document.getElementById('form-webhook').value = vendor.webhook_url || '';
+    document.getElementById('form-config').value = vendor.config || '{}';
+    document.getElementById('form-notes').value = vendor.notes || '';
+  } else {
+    title.textContent = 'Register Vendor';
+    document.getElementById('form-id').value = '';
+    document.getElementById('form-name').value = '';
+    document.getElementById('form-category').value = 'assessment';
+    document.getElementById('form-integration-type').value = 'api';
+    document.getElementById('form-description').value = '';
+    document.getElementById('form-endpoint').value = '';
+    document.getElementById('form-apikey').value = '';
+    document.getElementById('form-webhook').value = '';
+    document.getElementById('form-config').value = '{}';
+    document.getElementById('form-notes').value = '';
+  }
+
+  overlay.classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+async function handleSave() {
+  const name = document.getElementById('form-name').value.trim();
+  if (!name) {
+    alert('Vendor name is required.');
+    return;
+  }
+
+  const vendorData = {
+    name,
+    category: document.getElementById('form-category').value,
+    integration_type: document.getElementById('form-integration-type').value,
+    description: document.getElementById('form-description').value.trim(),
+    endpoint_url: document.getElementById('form-endpoint').value.trim(),
+    api_key: document.getElementById('form-apikey').value.trim(),
+    webhook_url: document.getElementById('form-webhook').value.trim(),
+    config: document.getElementById('form-config').value.trim() || '{}',
+    notes: document.getElementById('form-notes').value.trim(),
+    active: true,
+  };
+
+  const existingId = document.getElementById('form-id').value;
+  if (existingId) {
+    vendorData.id = existingId;
+    // Preserve existing active state when editing
+    const existing = allVendors.find(v => v.id === existingId);
+    if (existing) vendorData.active = existing.active;
+  }
+
+  const { error } = await saveVendor(vendorData);
+  if (error) {
+    alert('Failed to save vendor: ' + error.message);
+    return;
+  }
+
+  closeModal();
+  await loadVendors();
+
+  // If we were editing from detail view, refresh it
+  if (existingId && currentView === 'detail') {
+    showDetail(existingId);
+  }
+}
+
+/* ============================================================
+   Event Bindings
+   ============================================================ */
+function bindEvents() {
+  // Search and filters
+  document.getElementById('search-input').addEventListener('input', renderRegistry);
+  document.getElementById('filter-category').addEventListener('change', renderRegistry);
+  document.getElementById('filter-status').addEventListener('change', renderRegistry);
+
+  // Register button
+  document.getElementById('btn-register').addEventListener('click', () => openModal());
+
+  // Modal
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-cancel').addEventListener('click', closeModal);
+  document.getElementById('modal-save').addEventListener('click', handleSave);
+
+  // Close modal on overlay click
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // Escape key closes modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const overlay = document.getElementById('modal-overlay');
+      if (!overlay.classList.contains('hidden')) {
+        closeModal();
+      }
+    }
+  });
+}
+
+/* ============================================================
+   Utility
+   ============================================================ */
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+init();
+</script>
+
+</body>
+</html>
