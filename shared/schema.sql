@@ -158,7 +158,40 @@ CREATE INDEX IF NOT EXISTS idx_interactions_contact_id ON public.interactions(co
 
 
 -- ------------------------------------------------------------
--- 7. Vendor Integrations
+-- 7. Deals (HubSpot-style pipeline)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.deals (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name             TEXT NOT NULL,
+  contact_id       UUID REFERENCES public.contacts(id) ON DELETE SET NULL,
+  org_id           UUID REFERENCES public.organizations(id) ON DELETE SET NULL,
+  stage            TEXT NOT NULL DEFAULT 'appointment_scheduled'
+                     CHECK (stage IN (
+                       'appointment_scheduled',
+                       'qualified_to_buy',
+                       'presentation_scheduled',
+                       'decision_maker_bought_in',
+                       'contract_sent',
+                       'closed_won',
+                       'closed_lost'
+                     )),
+  amount           NUMERIC(12,2),
+  forecast_amount  NUMERIC(12,2),
+  priority         TEXT CHECK (priority IN ('low', 'medium', 'high')),
+  deal_type        TEXT,                     -- e.g. 'newbusiness', 'existingbusiness'
+  close_date       TIMESTAMPTZ,
+  owner_id         UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  notes            TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_deals_stage ON public.deals(stage);
+CREATE INDEX IF NOT EXISTS idx_deals_org_id ON public.deals(org_id);
+
+
+-- ------------------------------------------------------------
+-- 8. Vendor Integrations
 -- ------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.vendors (
   id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -297,6 +330,23 @@ CREATE POLICY interactions_select_authenticated ON public.interactions
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
 CREATE POLICY interactions_manage ON public.interactions
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE id = auth.uid()
+        AND role IN ('admin', 'facilitator', 'partner')
+    )
+  );
+
+
+-- ---- Deals ----
+
+-- Authenticated users can read deals
+CREATE POLICY deals_select_authenticated ON public.deals
+  FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- Facilitators, partners, and admins can manage deals
+CREATE POLICY deals_manage ON public.deals
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM public.profiles

@@ -87,6 +87,7 @@ const ls = {
   orgs:           new LocalStore('ip_organizations'),
   interactions:   new LocalStore('ip_interactions'),
   vendors:        new LocalStore('ip_vendors'),
+  deals:          new LocalStore('ip_deals'),
 };
 
 
@@ -363,4 +364,67 @@ export async function toggleVendor(id, active) {
   if (!vendor) return { data: null, error: { message: 'Vendor not found' } };
   vendor.active = active;
   return ls.vendors.upsert(vendor);
+}
+
+
+/* ================================================================
+   Deals
+   ================================================================ */
+
+export async function saveDeal(data) {
+  if (isConfigured()) {
+    const record = { ...data, id: data.id || uuid(), updated_at: now() };
+    if (!data.id) record.created_at = now();
+    const { data: row, error } = await supabase
+      .from('deals')
+      .upsert(record)
+      .select()
+      .single();
+    return { data: row, error };
+  }
+  return ls.deals.upsert({ ...data });
+}
+
+export async function getDeals(filters) {
+  if (isConfigured()) {
+    let query = supabase.from('deals').select('*').order('created_at', { ascending: false });
+    if (filters) {
+      if (filters.stage)      query = query.eq('stage', filters.stage);
+      if (filters.org_id)     query = query.eq('org_id', filters.org_id);
+      if (filters.contact_id) query = query.eq('contact_id', filters.contact_id);
+      if (filters.search) {
+        query = query.ilike('name', `%${filters.search}%`);
+      }
+    }
+    const { data, error } = await query;
+    return { data, error };
+  }
+
+  return ls.deals.getAll(row => {
+    if (!filters) return true;
+    if (filters.stage && row.stage !== filters.stage) return false;
+    if (filters.org_id && row.org_id !== filters.org_id) return false;
+    if (filters.contact_id && row.contact_id !== filters.contact_id) return false;
+    if (filters.search) {
+      const s = filters.search.toLowerCase();
+      if (!(row.name || '').toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+}
+
+export async function getDeal(id) {
+  if (isConfigured()) {
+    const { data, error } = await supabase.from('deals').select('*').eq('id', id).single();
+    return { data, error };
+  }
+  return ls.deals.getById(id);
+}
+
+export async function deleteDeal(id) {
+  if (isConfigured()) {
+    const { data, error } = await supabase.from('deals').delete().eq('id', id).select().single();
+    return { data, error };
+  }
+  return ls.deals.remove(id);
 }

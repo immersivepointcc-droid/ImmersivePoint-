@@ -813,6 +813,9 @@
     <button class="crm-tab" data-tab="interactions" role="tab" aria-selected="false">
       Interactions <span class="tab-count" id="tab-count-interactions">0</span>
     </button>
+    <button class="crm-tab" data-tab="deals" role="tab" aria-selected="false">
+      Deals <span class="tab-count" id="tab-count-deals">0</span>
+    </button>
   </div>
 
   <!-- ═══════════════ CONTACTS PANEL ═══════════════ -->
@@ -845,9 +848,12 @@
       <select class="select" id="org-type-filter">
         <option value="">All Types</option>
         <option value="school">School</option>
+        <option value="higher_education">Higher Education</option>
         <option value="nonprofit">Nonprofit</option>
         <option value="employer">Employer</option>
+        <option value="healthcare">Healthcare</option>
         <option value="government">Government</option>
+        <option value="partner">Partner</option>
         <option value="other">Other</option>
       </select>
       <button class="btn btn-primary" id="btn-add-org">+ Add Organization</button>
@@ -876,6 +882,100 @@
 
     <div id="interactions-content">
       <div class="crm-loading"><div class="spinner"></div> Loading interactions...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DEALS PANEL ═══════════════ -->
+  <div class="crm-panel" id="panel-deals" role="tabpanel">
+    <div class="crm-toolbar">
+      <input type="text" class="input input-search" id="deal-search" placeholder="Search deals...">
+      <select class="select" id="deal-stage-filter">
+        <option value="">All Stages</option>
+        <option value="appointment_scheduled">Appointment Scheduled</option>
+        <option value="qualified_to_buy">Qualified To Buy</option>
+        <option value="presentation_scheduled">Presentation Scheduled</option>
+        <option value="decision_maker_bought_in">Decision Maker Bought-In</option>
+        <option value="contract_sent">Contract Sent</option>
+        <option value="closed_won">Closed Won</option>
+        <option value="closed_lost">Closed Lost</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-deal">+ Add Deal</button>
+    </div>
+
+    <div id="deals-content">
+      <div class="crm-loading"><div class="spinner"></div> Loading deals...</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DEAL MODAL ═══════════════ -->
+  <div class="modal-overlay" id="deal-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="deal-modal-title">Add Deal</h3>
+        <button class="modal-close" id="deal-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="deal-id">
+        <div class="form-group">
+          <label class="form-label">Deal Name *</label>
+          <input type="text" class="input" id="deal-name" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Stage</label>
+            <select class="select" id="deal-stage">
+              <option value="appointment_scheduled">Appointment Scheduled</option>
+              <option value="qualified_to_buy">Qualified To Buy</option>
+              <option value="presentation_scheduled">Presentation Scheduled</option>
+              <option value="decision_maker_bought_in">Decision Maker Bought-In</option>
+              <option value="contract_sent">Contract Sent</option>
+              <option value="closed_won">Closed Won</option>
+              <option value="closed_lost">Closed Lost</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount ($)</label>
+            <input type="number" class="input" id="deal-amount" step="0.01" min="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Organization</label>
+            <select class="select" id="deal-org"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <select class="select" id="deal-priority">
+              <option value="">None</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Close Date</label>
+            <input type="date" class="input" id="deal-close-date">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deal Type</label>
+            <select class="select" id="deal-type">
+              <option value="">—</option>
+              <option value="newbusiness">New Business</option>
+              <option value="existingbusiness">Existing Business</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notes</label>
+          <textarea class="textarea" id="deal-notes" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="deal-modal-cancel">Cancel</button>
+        <button class="btn btn-primary" id="deal-modal-save">Save Deal</button>
+      </div>
     </div>
   </div>
 
@@ -1063,7 +1163,8 @@
     import {
       getContacts, saveContact, deleteContact,
       getOrgs, saveOrg, getOrg,
-      getInteractions, saveInteraction
+      getInteractions, saveInteraction,
+      getDeals, saveDeal, deleteDeal
     } from '/shared/store.js';
 
     // ── Auth + Nav ──
@@ -1075,6 +1176,7 @@
     let allContacts = [];
     let allOrgs = [];
     let allInteractions = [];
+    let allDeals = [];
     let orgMap = {};        // id -> org
     let contactMap = {};    // id -> contact
 
@@ -1138,15 +1240,17 @@
     // ── Data Loading ──
 
     async function loadAll() {
-      const [contactsRes, orgsRes, interactionsRes] = await Promise.all([
+      const [contactsRes, orgsRes, interactionsRes, dealsRes] = await Promise.all([
         getContacts(),
         getOrgs(),
-        getInteractions()
+        getInteractions(),
+        getDeals()
       ]);
 
       allContacts = contactsRes.data || [];
       allOrgs = orgsRes.data || [];
       allInteractions = interactionsRes.data || [];
+      allDeals = dealsRes.data || [];
 
       orgMap = {};
       allOrgs.forEach(o => orgMap[o.id] = o);
@@ -1159,6 +1263,7 @@
       renderContacts();
       renderOrgs();
       renderInteractions();
+      renderDeals();
     }
 
     function updateStats() {
@@ -1168,6 +1273,7 @@
       $('#tab-count-contacts').textContent = allContacts.length;
       $('#tab-count-orgs').textContent = allOrgs.length;
       $('#tab-count-interactions').textContent = allInteractions.length;
+      $('#tab-count-deals').textContent = allDeals.length;
     }
 
     function populateOrgDropdowns() {
@@ -1175,6 +1281,7 @@
 
       $('#contact-org-filter').innerHTML = '<option value="">All Organizations</option>' + options;
       $('#contact-org').innerHTML = '<option value="">-- None --</option>' + options;
+      $('#deal-org').innerHTML = '<option value="">-- None --</option>' + options;
     }
 
     // ── Contacts Rendering ──
@@ -1766,6 +1873,198 @@
       });
     }
 
+    // ── Deals Rendering ──
+
+    const STAGE_LABELS = {
+      appointment_scheduled: 'Appointment Scheduled',
+      qualified_to_buy: 'Qualified To Buy',
+      presentation_scheduled: 'Presentation Scheduled',
+      decision_maker_bought_in: 'Decision Maker Bought-In',
+      contract_sent: 'Contract Sent',
+      closed_won: 'Closed Won',
+      closed_lost: 'Closed Lost'
+    };
+
+    const STAGE_COLORS = {
+      appointment_scheduled: '#60a5fa',
+      qualified_to_buy: '#a78bfa',
+      presentation_scheduled: '#f59e0b',
+      decision_maker_bought_in: '#34d399',
+      contract_sent: '#06b6d4',
+      closed_won: '#22c55e',
+      closed_lost: '#ef4444'
+    };
+
+    function getFilteredDeals() {
+      const search = ($('#deal-search').value || '').toLowerCase();
+      const stage = $('#deal-stage-filter').value;
+
+      return allDeals.filter(d => {
+        if (stage && d.stage !== stage) return false;
+        if (search) {
+          const hay = `${d.name || ''} ${getOrgName(d.org_id)} ${getContactName(d.contact_id)}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+
+    function formatCurrency(val) {
+      if (val == null || val === '') return '--';
+      return '$' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function renderDeals() {
+      const filtered = getFilteredDeals();
+      const container = $('#deals-content');
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2696;</div>
+            <h3>No deals found</h3>
+            <p>${allDeals.length ? 'Try adjusting your search or stage filter.' : 'Add your first deal to get started.'}</p>
+            ${!allDeals.length ? '<button class="btn btn-primary" onclick="document.getElementById(\'btn-add-deal\').click()">+ Add Deal</button>' : ''}
+          </div>`;
+        return;
+      }
+
+      const totalValue = filtered.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+      const wonCount = filtered.filter(d => d.stage === 'closed_won').length;
+      const openCount = filtered.filter(d => d.stage !== 'closed_won' && d.stage !== 'closed_lost').length;
+
+      let html = `
+        <div class="deals-summary" style="display:flex;gap:var(--sp-4);margin-bottom:var(--sp-4);flex-wrap:wrap;">
+          <div class="card" style="flex:1;min-width:140px;padding:var(--sp-3);text-align:center;">
+            <div style="font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;">Pipeline Value</div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--cyan);font-family:var(--font-heading);">${formatCurrency(totalValue)}</div>
+          </div>
+          <div class="card" style="flex:1;min-width:140px;padding:var(--sp-3);text-align:center;">
+            <div style="font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;">Open Deals</div>
+            <div style="font-size:1.5rem;font-weight:700;color:var(--amber);font-family:var(--font-heading);">${openCount}</div>
+          </div>
+          <div class="card" style="flex:1;min-width:140px;padding:var(--sp-3);text-align:center;">
+            <div style="font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;">Won</div>
+            <div style="font-size:1.5rem;font-weight:700;color:#22c55e;font-family:var(--font-heading);">${wonCount}</div>
+          </div>
+        </div>`;
+
+      html += '<div class="table-wrap"><table class="table"><thead><tr>';
+      html += '<th>Deal Name</th><th>Organization</th><th>Stage</th><th>Amount</th><th>Priority</th><th>Close Date</th><th>Actions</th>';
+      html += '</tr></thead><tbody>';
+
+      filtered.forEach(d => {
+        const stageColor = STAGE_COLORS[d.stage] || 'var(--text-dim)';
+        const stageLabel = STAGE_LABELS[d.stage] || d.stage;
+        const priorityBadge = d.priority
+          ? `<span class="badge" style="background:${d.priority === 'high' ? 'rgba(239,68,68,0.15);color:#ef4444' : d.priority === 'medium' ? 'rgba(245,158,11,0.15);color:#f59e0b' : 'rgba(148,163,184,0.15);color:#94a3b8'}">${esc(d.priority)}</span>`
+          : '<span style="color:var(--text-dim)">--</span>';
+
+        html += `
+          <tr data-deal-id="${esc(d.id)}">
+            <td><strong>${esc(d.name)}</strong></td>
+            <td>${esc(getOrgName(d.org_id)) || '<span style="color:var(--text-dim)">--</span>'}</td>
+            <td><span class="badge" style="background:${stageColor}22;color:${stageColor};border:1px solid ${stageColor}44;">${esc(stageLabel)}</span></td>
+            <td style="font-family:var(--font-heading);font-weight:600;">${formatCurrency(d.amount)}</td>
+            <td>${priorityBadge}</td>
+            <td>${formatDate(d.close_date)}</td>
+            <td class="actions-cell">
+              <button class="btn btn-ghost btn-sm btn-edit-deal" data-id="${esc(d.id)}" title="Edit">&#x270E;</button>
+              <button class="btn btn-ghost btn-sm btn-delete-deal" data-id="${esc(d.id)}" title="Delete" style="color:var(--danger);">&#x2715;</button>
+            </td>
+          </tr>`;
+      });
+
+      html += '</tbody></table></div>';
+      container.innerHTML = html;
+
+      container.querySelectorAll('.btn-edit-deal').forEach(btn => {
+        btn.addEventListener('click', () => openEditDeal(btn.dataset.id));
+      });
+      container.querySelectorAll('.btn-delete-deal').forEach(btn => {
+        btn.addEventListener('click', () => handleDeleteDeal(btn.dataset.id));
+      });
+    }
+
+    // ── Deal CRUD ──
+
+    function openAddDeal() {
+      $('#deal-modal-title').textContent = 'Add Deal';
+      $('#deal-id').value = '';
+      $('#deal-name').value = '';
+      $('#deal-stage').value = 'appointment_scheduled';
+      $('#deal-amount').value = '';
+      $('#deal-org').value = '';
+      $('#deal-priority').value = '';
+      $('#deal-close-date').value = '';
+      $('#deal-type').value = '';
+      $('#deal-notes').value = '';
+      openModal('deal-modal');
+    }
+
+    function openEditDeal(dealId) {
+      const d = allDeals.find(x => x.id === dealId);
+      if (!d) return;
+
+      $('#deal-modal-title').textContent = 'Edit Deal';
+      $('#deal-id').value = d.id;
+      $('#deal-name').value = d.name || '';
+      $('#deal-stage').value = d.stage || 'appointment_scheduled';
+      $('#deal-amount').value = d.amount || '';
+      $('#deal-org').value = d.org_id || '';
+      $('#deal-priority').value = d.priority || '';
+      $('#deal-close-date').value = d.close_date ? d.close_date.slice(0, 10) : '';
+      $('#deal-type').value = d.deal_type || '';
+      $('#deal-notes').value = d.notes || '';
+      openModal('deal-modal');
+    }
+
+    async function handleSaveDeal() {
+      const name = $('#deal-name').value.trim();
+      if (!name) {
+        toast('Please enter a deal name.', 'error');
+        return;
+      }
+
+      const data = {
+        name,
+        stage: $('#deal-stage').value,
+        amount: $('#deal-amount').value ? parseFloat($('#deal-amount').value) : null,
+        org_id: $('#deal-org').value || null,
+        priority: $('#deal-priority').value || null,
+        close_date: $('#deal-close-date').value ? new Date($('#deal-close-date').value).toISOString() : null,
+        deal_type: $('#deal-type').value || null,
+        notes: $('#deal-notes').value.trim() || null
+      };
+
+      const id = $('#deal-id').value;
+      if (id) data.id = id;
+
+      const { error } = await saveDeal(data);
+      if (error) {
+        toast('Failed to save deal: ' + (error.message || 'Unknown error'), 'error');
+        return;
+      }
+
+      closeModal('deal-modal');
+      toast(id ? 'Deal updated.' : 'Deal created.');
+      await loadAll();
+    }
+
+    async function handleDeleteDeal(dealId) {
+      const d = allDeals.find(x => x.id === dealId);
+      if (!d) return;
+      if (!confirm(`Delete deal "${d.name}"? This cannot be undone.`)) return;
+
+      const { error } = await deleteDeal(dealId);
+      if (error) {
+        toast('Failed to delete deal: ' + (error.message || 'Unknown error'), 'error');
+        return;
+      }
+      toast('Deal deleted.');
+      await loadAll();
+    }
+
     // ── Tab Switching ──
 
     function switchTab(tabId) {
@@ -1816,6 +2115,10 @@
     $('#btn-save-org').addEventListener('click', handleSaveOrg);
     $('#btn-log-interaction').addEventListener('click', () => openLogInteraction());
     $('#btn-save-interaction').addEventListener('click', handleSaveInteraction);
+    $('#btn-add-deal').addEventListener('click', openAddDeal);
+    $('#deal-modal-save').addEventListener('click', handleSaveDeal);
+    $('#deal-modal-close').addEventListener('click', () => closeModal('deal-modal'));
+    $('#deal-modal-cancel').addEventListener('click', () => closeModal('deal-modal'));
 
     // Search and filter inputs with debounce
     let searchTimeout;
@@ -1833,6 +2136,9 @@
 
     $('#interaction-search').addEventListener('input', () => debounceRender(renderInteractions));
     $('#interaction-type-filter').addEventListener('change', renderInteractions);
+
+    $('#deal-search').addEventListener('input', () => debounceRender(renderDeals));
+    $('#deal-stage-filter').addEventListener('change', renderDeals);
 
     // Setup searchable dropdown
     setupContactSearchDropdown();

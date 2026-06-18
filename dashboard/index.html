@@ -539,6 +539,7 @@ import {
   getVendors,
   getInteractions
 } from '/shared/store.js';
+import { seedFromHubSpot } from '/shared/seed.js';
 
 /* ================================================================
    Boot
@@ -547,6 +548,9 @@ import {
 async function boot() {
   const user = await requireAuth();
   await renderNav('dashboard');
+
+  // Seed HubSpot data on first visit
+  await seedFromHubSpot();
 
   const role = await getRole();
   const userName = user?.email?.split('@')[0] || 'Explorer';
