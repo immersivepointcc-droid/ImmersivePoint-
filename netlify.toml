@@ -36,6 +36,11 @@
   to = "/vendors/index.html"
   status = 200
 
+[[redirects]]
+  from = "/cast/*"
+  to = "/cast/index.html"
+  status = 200
+
 # Public passport share links — /p/<share_code>
 [[redirects]]
   from = "/p/*"

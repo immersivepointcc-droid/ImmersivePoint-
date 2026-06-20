@@ -6,7 +6,7 @@
   <script>
     // GitHub Pages SPA redirect: sends unknown paths to the correct module
     const path = window.location.pathname;
-    const modules = ['dashboard', 'spark', 'passport', 'crm', 'vendors'];
+    const modules = ['dashboard', 'spark', 'passport', 'crm', 'vendors', 'cast'];
     const match = modules.find(m => path.startsWith('/' + m));
     if (match) {
       window.location.replace('/' + match + '/');

@@ -15,6 +15,7 @@ const MODULES = [
   { id: 'passport',  label: 'Passport',   icon: '⦾', href: '/passport/' },
   { id: 'crm',       label: 'CRM',        icon: '☰', href: '/crm/' },
   { id: 'vendors',   label: 'Vendors',    icon: '⌂', href: '/vendors/' },
+  { id: 'cast',      label: 'Cast Hub',   icon: '◉', href: '/cast/' },
 ];
 
 /* Friendly labels for topbar titles */
@@ -24,6 +25,7 @@ const MODULE_TITLES = {
   passport:  'Career Passport',
   crm:       'Contact Management',
   vendors:   'Vendor Integrations',
+  cast:      'Cast Hub',
 };
 
 /* ---- Render ----------------------------------------------- */

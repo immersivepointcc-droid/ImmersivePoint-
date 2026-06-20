@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cast Hub · ImmersivePoint</title>
+
+<!-- Shared theme -->
+<link rel="stylesheet" href="/shared/theme.css" />
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+  /* ===== Cast Hub styles ===== */
+
+  /* ---------- Facilitator View ---------- */
+
+  .cast-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-6);
+  }
+
+  .cast-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+  }
+
+  .cast-header h2 {
+    font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--cyan-glow), var(--purple-glow));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .cast-header .headset-count {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+    background: rgba(0, 180, 216, 0.08);
+    border: 1px solid rgba(0, 180, 216, 0.2);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-1) var(--sp-3);
+  }
+
+  .headset-count .status-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* Room code display */
+  .room-code-section {
+    background: linear-gradient(135deg, var(--surface-2), var(--surface-3));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    text-align: center;
+    margin-bottom: var(--sp-6);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .room-code-section::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 50% 70% at 50% 30%, rgba(0, 180, 216, 0.08), transparent 60%);
+    pointer-events: none;
+  }
+
+  .room-code-section::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--amber));
+  }
+
+  .room-code-label {
+    position: relative;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--sp-2);
+  }
+
+  .room-code-value {
+    position: relative;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--cyan-glow);
+    text-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 40px rgba(0, 212, 255, 0.15);
+    margin-bottom: var(--sp-4);
+    user-select: all;
+  }
+
+  .room-code-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+  }
+
+  .copy-feedback {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--success);
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+
+  .copy-feedback.show {
+    opacity: 1;
+  }
+
+  /* Controls bar */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  .controls-bar-left,
+  .controls-bar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .grid-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .grid-toggle button {
+    background: transparent;
+    border: none;
+    color: var(--ink-dim);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: var(--sp-1) var(--sp-3);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-right: 1px solid var(--border);
+  }
+
+  .grid-toggle button:last-child {
+    border-right: none;
+  }
+
+  .grid-toggle button.active {
+    background: rgba(0, 180, 216, 0.15);
+    color: var(--cyan);
+  }
+
+  .grid-toggle button:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ink);
+  }
+
+  /* Video grid */
+  .video-grid {
+    display: grid;
+    gap: var(--sp-4);
+    min-height: 300px;
+  }
+
+  .video-grid.grid-auto {
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  }
+
+  .video-grid.grid-2x2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .video-grid.grid-3x3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Feed card */
+  .feed-card {
+    background: var(--surface-2);
+    border: 1px solid rgba(0, 180, 216, 0.2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    position: relative;
+  }
+
+  .feed-card:hover {
+    border-color: rgba(0, 180, 216, 0.4);
+    box-shadow: 0 0 20px rgba(0, 180, 216, 0.12);
+  }
+
+  .feed-card video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: var(--navy-3);
+    display: block;
+    object-fit: contain;
+  }
+
+  .feed-card-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--surface-1);
+    border-top: 1px solid var(--border);
+  }
+
+  .feed-card-info {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .feed-card-name {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .feed-card-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  .feed-card-actions button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--ink-dim);
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all var(--transition-fast);
+  }
+
+  .feed-card-actions button:hover {
+    color: var(--ink);
+    border-color: var(--border-hover);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .feed-card-actions .disconnect-btn:hover {
+    color: var(--danger);
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  /* Empty state */
+  .empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-16) var(--sp-6);
+    text-align: center;
+  }
+
+  .empty-state-icon {
+    font-size: 3.5rem;
+    margin-bottom: var(--sp-4);
+    opacity: 0.4;
+  }
+
+  .empty-state-text {
+    font-size: 1rem;
+    color: var(--ink-dim);
+    max-width: 360px;
+  }
+
+  .empty-state-hint {
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    margin-top: var(--sp-2);
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .empty-state-icon {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  /* How-to section */
+  .how-to-section {
+    margin-top: var(--sp-8);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+  }
+
+  .how-to-section h3 {
+    font-size: 1rem;
+    margin-bottom: var(--sp-4);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .how-to-steps {
+    display: grid;
+    gap: var(--sp-4);
+  }
+
+  @media (min-width: 640px) {
+    .how-to-steps {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .how-to-step {
+    display: flex;
+    gap: var(--sp-3);
+  }
+
+  .how-to-step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 180, 216, 0.12);
+    border: 1px solid rgba(0, 180, 216, 0.25);
+    border-radius: 50%;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--cyan);
+  }
+
+  .how-to-step-text {
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+    line-height: 1.5;
+  }
+
+  /* ---------- Sender / Headset View ---------- */
+
+  .sender-view {
+    min-height: 100vh;
+    background: var(--surface-0);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-6);
+  }
+
+  .sender-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--sp-8);
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sender-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--cyan), var(--purple), var(--amber));
+  }
+
+  .sender-brand {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    margin-bottom: var(--sp-2);
+  }
+
+  .sender-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: var(--sp-6);
+    color: var(--ink);
+  }
+
+  .sender-room-code {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.5rem;
+    color: var(--cyan-glow);
+    text-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    background: rgba(0, 180, 216, 0.08);
+    border: 1px solid rgba(0, 180, 216, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--sp-2) var(--sp-4);
+    display: inline-block;
+    margin-bottom: var(--sp-6);
+    letter-spacing: 0.15em;
+  }
+
+  .sender-form-group {
+    margin-bottom: var(--sp-5);
+    text-align: left;
+  }
+
+  .sender-form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--sp-2);
+  }
+
+  .sender-form-group .input {
+    font-size: 1.1rem;
+    padding: var(--sp-3) var(--sp-4);
+  }
+
+  .sender-btn {
+    width: 100%;
+    padding: var(--sp-4) var(--sp-6);
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-radius: var(--radius-lg);
+    min-height: 56px;
+    touch-action: manipulation;
+  }
+
+  .sender-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    font-size: 0.9rem;
+    color: var(--ink-dim);
+  }
+
+  .sender-preview-wrap {
+    position: fixed;
+    bottom: var(--sp-4);
+    right: var(--sp-4);
+    width: 200px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid rgba(0, 180, 216, 0.3);
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+  }
+
+  .sender-preview-wrap video {
+    width: 100%;
+    display: block;
+    background: var(--navy-3);
+  }
+
+  .sender-preview-label {
+    background: var(--surface-1);
+    padding: var(--sp-1) var(--sp-2);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--ink-faint);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .sender-error {
+    margin-top: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    color: #f87171;
+    font-size: 0.85rem;
+    text-align: left;
+  }
+
+  /* Responsive adjustments for Quest 3 browser */
+  @media (max-width: 600px) {
+    .sender-card {
+      padding: var(--sp-6);
+    }
+
+    .sender-btn {
+      font-size: 1rem;
+      min-height: 52px;
+    }
+
+    .sender-preview-wrap {
+      width: 150px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .video-grid.grid-2x2,
+    .video-grid.grid-3x3 {
+      grid-template-columns: 1fr;
+    }
+
+    .room-code-value {
+      font-size: 2rem;
+    }
+
+    .cast-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .controls-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .video-grid.grid-auto {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<!-- Facilitator view container (populated by JS) -->
+<div id="facilitator-view" style="display:none">
+  <!-- Cast header -->
+  <div class="cast-header">
+    <div class="cast-header-left">
+      <h2>Cast Hub</h2>
+      <span class="headset-count">
+        <span class="status-dot status-dot-active"></span>
+        <span id="peer-count">0</span> connected
+      </span>
+    </div>
+  </div>
+
+  <!-- Room code -->
+  <div class="room-code-section">
+    <div class="room-code-label">Room Code</div>
+    <div class="room-code-value" id="room-code"></div>
+    <div class="room-code-actions">
+      <button class="btn btn-primary" id="copy-link-btn">Copy Join Link</button>
+      <button class="btn btn-ghost" id="copy-code-btn">Copy Code</button>
+      <span class="copy-feedback" id="copy-feedback">Copied!</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-bar">
+    <div class="controls-bar-left">
+      <span class="text-xs text-dim" style="margin-right:var(--sp-2)">Grid:</span>
+      <div class="grid-toggle" id="grid-toggle">
+        <button data-grid="auto" class="active" title="Auto layout">Auto</button>
+        <button data-grid="2x2" title="2 by 2 grid">2x2</button>
+        <button data-grid="3x3" title="3 by 3 grid">3x3</button>
+      </div>
+    </div>
+    <div class="controls-bar-right">
+      <button class="btn btn-ghost btn-sm" id="mute-all-btn" title="Mute all feeds">Mute All</button>
+      <button class="btn btn-ghost btn-sm" id="unmute-all-btn" title="Unmute all feeds">Unmute All</button>
+    </div>
+  </div>
+
+  <!-- Video grid -->
+  <div class="video-grid grid-auto" id="video-grid">
+    <div class="empty-state" id="empty-state">
+      <div class="empty-state-icon">&#x1F3A7;</div>
+      <div class="empty-state-text">Waiting for Quest 3 headsets to connect...</div>
+      <div class="empty-state-hint">Share the room code or join link with headset users</div>
+    </div>
+  </div>
+
+  <!-- How to cast -->
+  <div class="how-to-section">
+    <h3>How to Cast from Quest 3</h3>
+    <div class="how-to-steps">
+      <div class="how-to-step">
+        <div class="how-to-step-num">1</div>
+        <div class="how-to-step-text">
+          Open the <strong>Meta Quest Browser</strong> on the headset and navigate to the join link (or go to this page and enter the room code).
+        </div>
+      </div>
+      <div class="how-to-step">
+        <div class="how-to-step-num">2</div>
+        <div class="how-to-step-text">
+          Enter a name to identify the headset, then tap <strong>"Start Casting"</strong>. Grant the screen-sharing permission when prompted.
+        </div>
+      </div>
+      <div class="how-to-step">
+        <div class="how-to-step-num">3</div>
+        <div class="how-to-step-text">
+          The headset's screen will appear in the grid above. Use the <strong>fullscreen</strong> button on any feed to expand it.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sender / headset view (populated by JS) -->
+<div id="sender-view" class="sender-view" style="display:none">
+  <div class="sender-card">
+    <div class="sender-brand">IMMERSIVEPOINT</div>
+    <h2>Cast to Hub</h2>
+    <div class="sender-room-code" id="sender-room-code"></div>
+
+    <div class="sender-form-group">
+      <label for="sender-name">Your Name / Headset Label</label>
+      <input type="text" id="sender-name" class="input" placeholder="e.g. Headset 1, Student A" maxlength="30" autocomplete="off" />
+    </div>
+
+    <button class="btn btn-primary sender-btn" id="start-cast-btn">Start Casting</button>
+    <button class="btn btn-danger sender-btn" id="stop-cast-btn" style="display:none">Stop Casting</button>
+
+    <div class="sender-status" id="sender-status" style="display:none">
+      <span class="status-dot" id="sender-status-dot"></span>
+      <span id="sender-status-text"></span>
+    </div>
+
+    <div class="sender-error" id="sender-error" style="display:none"></div>
+  </div>
+
+  <!-- Preview (shown when casting) -->
+  <div class="sender-preview-wrap" id="sender-preview" style="display:none">
+    <video id="sender-preview-video" autoplay muted playsinline></video>
+    <div class="sender-preview-label">Your Cast Preview</div>
+  </div>
+</div>
+
+<!-- PeerJS (UMD — must load before module script) -->
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1/dist/peerjs.min.js"></script>
+
+<script type="module">
+import { requireAuth, getUser, getRole } from '/shared/auth.js';
+import { renderNav } from '/shared/nav.js';
+
+/* ================================================================
+   Utilities
+   ================================================================ */
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 for clarity
+  let code = '';
+  const values = crypto.getRandomValues(new Uint8Array(6));
+  for (let i = 0; i < 6; i++) {
+    code += chars[values[i] % chars.length];
+  }
+  return code;
+}
+
+function getRoomCodeFromURL() {
+  // Check hash first: #join=CODE
+  const hashMatch = location.hash.match(/join=([A-Za-z0-9]{4,8})/i);
+  if (hashMatch) return hashMatch[1].toUpperCase();
+
+  // Check query param: ?join=CODE
+  const params = new URLSearchParams(location.search);
+  const joinParam = params.get('join');
+  if (joinParam && /^[A-Za-z0-9]{4,8}$/i.test(joinParam)) {
+    return joinParam.toUpperCase();
+  }
+  return null;
+}
+
+function buildJoinURL(roomCode) {
+  return `${location.origin}/cast/#join=${roomCode}`;
+}
+
+function setPeerCount(n) {
+  const el = document.getElementById('peer-count');
+  if (el) el.textContent = n;
+}
+
+/* ================================================================
+   Determine View Mode
+   ================================================================ */
+
+const joinCode = getRoomCodeFromURL();
+const isSenderMode = !!joinCode;
+
+if (isSenderMode) {
+  initSenderView(joinCode);
+} else {
+  initFacilitatorView();
+}
+
+/* ================================================================
+   FACILITATOR VIEW
+   ================================================================ */
+
+async function initFacilitatorView() {
+  // Require facilitator/partner/admin role
+  await requireAuth(['facilitator', 'partner', 'admin']);
+  await renderNav('cast');
+
+  document.getElementById('facilitator-view').style.display = '';
+
+  // Room code — persist across refreshes
+  let roomCode = sessionStorage.getItem('ip_cast_room_code');
+  if (!roomCode) {
+    roomCode = generateRoomCode();
+    sessionStorage.setItem('ip_cast_room_code', roomCode);
+  }
+
+  document.getElementById('room-code').textContent = roomCode;
+
+  // Copy buttons
+  document.getElementById('copy-link-btn').addEventListener('click', () => {
+    copyToClipboard(buildJoinURL(roomCode));
+  });
+
+  document.getElementById('copy-code-btn').addEventListener('click', () => {
+    copyToClipboard(roomCode);
+  });
+
+  // Grid toggle
+  const videoGrid = document.getElementById('video-grid');
+  const gridToggle = document.getElementById('grid-toggle');
+
+  gridToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-grid]');
+    if (!btn) return;
+    const mode = btn.dataset.grid;
+
+    gridToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    videoGrid.classList.remove('grid-auto', 'grid-2x2', 'grid-3x3');
+    videoGrid.classList.add(`grid-${mode}`);
+  });
+
+  // Mute / unmute all
+  document.getElementById('mute-all-btn').addEventListener('click', () => {
+    videoGrid.querySelectorAll('video').forEach(v => v.muted = true);
+  });
+
+  document.getElementById('unmute-all-btn').addEventListener('click', () => {
+    videoGrid.querySelectorAll('video').forEach(v => v.muted = false);
+  });
+
+  // Initialize PeerJS as facilitator
+  initFacilitatorPeer(roomCode);
+}
+
+/* ----- Copy helper ----- */
+async function copyToClipboard(text) {
+  const feedback = document.getElementById('copy-feedback');
+  try {
+    await navigator.clipboard.writeText(text);
+    feedback.classList.add('show');
+    setTimeout(() => feedback.classList.remove('show'), 2000);
+  } catch {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    feedback.classList.add('show');
+    setTimeout(() => feedback.classList.remove('show'), 2000);
+  }
+}
+
+/* ----- Facilitator Peer ----- */
+
+const activePeers = new Map(); // peerId -> { conn, mediaConn, stream, name, element }
+
+function initFacilitatorPeer(roomCode) {
+  const peerId = `ip-cast-${roomCode}`;
+  let peer;
+
+  try {
+    peer = new Peer(peerId);
+  } catch (err) {
+    showFacilitatorError('Failed to initialize PeerJS. The PeerJS cloud server may be unavailable.');
+    return;
+  }
+
+  peer.on('open', () => {
+    console.log('[Cast Hub] Facilitator peer open:', peerId);
+  });
+
+  peer.on('error', (err) => {
+    console.error('[Cast Hub] Peer error:', err);
+    if (err.type === 'unavailable-id') {
+      // Room code collision — generate a new one
+      const newCode = generateRoomCode();
+      sessionStorage.setItem('ip_cast_room_code', newCode);
+      document.getElementById('room-code').textContent = newCode;
+      showFacilitatorError(`Room code was already in use. New code: ${newCode}. Reloading...`);
+      setTimeout(() => location.reload(), 2000);
+    } else if (err.type === 'network' || err.type === 'server-error') {
+      showFacilitatorError('Cannot reach the PeerJS signaling server. Check your internet connection and try refreshing.');
+    } else if (err.type === 'disconnected') {
+      showFacilitatorError('Lost connection to signaling server. Attempting to reconnect...');
+      setTimeout(() => peer.reconnect(), 3000);
+    }
+  });
+
+  peer.on('disconnected', () => {
+    console.warn('[Cast Hub] Peer disconnected, attempting reconnect...');
+    setTimeout(() => {
+      if (!peer.destroyed) peer.reconnect();
+    }, 3000);
+  });
+
+  // Handle incoming calls
+  peer.on('call', (mediaConn) => {
+    const callerPeerId = mediaConn.peer;
+    const peerName = mediaConn.metadata?.name || 'Unknown Headset';
+
+    console.log('[Cast Hub] Incoming call from:', callerPeerId, 'name:', peerName);
+
+    // Answer the call (no stream to send back)
+    mediaConn.answer();
+
+    mediaConn.on('stream', (remoteStream) => {
+      console.log('[Cast Hub] Received stream from:', peerName);
+      addFeedCard(callerPeerId, peerName, remoteStream, mediaConn);
+    });
+
+    mediaConn.on('close', () => {
+      console.log('[Cast Hub] Call closed from:', peerName);
+      removeFeedCard(callerPeerId);
+    });
+
+    mediaConn.on('error', (err) => {
+      console.error('[Cast Hub] Media connection error:', err);
+      removeFeedCard(callerPeerId);
+    });
+  });
+
+  // Also handle data connections (for metadata exchange)
+  peer.on('connection', (dataConn) => {
+    dataConn.on('data', (data) => {
+      if (data.type === 'name-update' && data.peerId) {
+        const peerInfo = activePeers.get(data.peerId);
+        if (peerInfo) {
+          peerInfo.name = data.name;
+          const nameEl = peerInfo.element?.querySelector('.feed-card-name');
+          if (nameEl) nameEl.textContent = data.name;
+        }
+      }
+    });
+  });
+}
+
+function showFacilitatorError(msg) {
+  // Insert error message above video grid
+  const grid = document.getElementById('video-grid');
+  let errEl = document.getElementById('facilitator-error');
+  if (!errEl) {
+    errEl = document.createElement('div');
+    errEl.id = 'facilitator-error';
+    errEl.className = 'sender-error';
+    errEl.style.marginBottom = 'var(--sp-4)';
+    grid.parentNode.insertBefore(errEl, grid);
+  }
+  errEl.textContent = msg;
+  errEl.style.display = '';
+}
+
+function addFeedCard(peerId, name, stream, mediaConn) {
+  // Hide empty state
+  const emptyState = document.getElementById('empty-state');
+  if (emptyState) emptyState.style.display = 'none';
+
+  const grid = document.getElementById('video-grid');
+
+  const card = document.createElement('div');
+  card.className = 'feed-card';
+  card.id = `feed-${peerId}`;
+
+  const video = document.createElement('video');
+  video.autoplay = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.srcObject = stream;
+
+  const bar = document.createElement('div');
+  bar.className = 'feed-card-bar';
+  bar.innerHTML = `
+    <div class="feed-card-info">
+      <span class="status-dot status-dot-active"></span>
+      <span class="feed-card-name">${escapeHtml(name)}</span>
+    </div>
+    <div class="feed-card-actions">
+      <button class="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
+      <button class="disconnect-btn" title="Disconnect">&#x2715;</button>
+    </div>
+  `;
+
+  card.appendChild(video);
+  card.appendChild(bar);
+  grid.appendChild(card);
+
+  // Fullscreen
+  bar.querySelector('.fullscreen-btn').addEventListener('click', () => {
+    if (video.requestFullscreen) {
+      video.requestFullscreen();
+    } else if (video.webkitRequestFullscreen) {
+      video.webkitRequestFullscreen();
+    }
+  });
+
+  // Disconnect
+  bar.querySelector('.disconnect-btn').addEventListener('click', () => {
+    mediaConn.close();
+    removeFeedCard(peerId);
+  });
+
+  // Track the peer
+  activePeers.set(peerId, { mediaConn, stream, name, element: card });
+  setPeerCount(activePeers.size);
+
+  // Monitor stream end
+  stream.getTracks().forEach(track => {
+    track.addEventListener('ended', () => {
+      removeFeedCard(peerId);
+    });
+  });
+}
+
+function removeFeedCard(peerId) {
+  const peerInfo = activePeers.get(peerId);
+  if (peerInfo) {
+    // Stop tracks
+    if (peerInfo.stream) {
+      peerInfo.stream.getTracks().forEach(t => t.stop());
+    }
+    // Remove DOM element
+    if (peerInfo.element && peerInfo.element.parentNode) {
+      peerInfo.element.parentNode.removeChild(peerInfo.element);
+    }
+    activePeers.delete(peerId);
+  }
+
+  setPeerCount(activePeers.size);
+
+  // Show empty state if no peers left
+  if (activePeers.size === 0) {
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) emptyState.style.display = '';
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ================================================================
+   SENDER / HEADSET VIEW
+   ================================================================ */
+
+function initSenderView(roomCode) {
+  document.getElementById('sender-view').style.display = '';
+  document.getElementById('sender-room-code').textContent = roomCode;
+
+  const nameInput = document.getElementById('sender-name');
+  const startBtn = document.getElementById('start-cast-btn');
+  const stopBtn = document.getElementById('stop-cast-btn');
+  const statusWrap = document.getElementById('sender-status');
+  const statusDot = document.getElementById('sender-status-dot');
+  const statusText = document.getElementById('sender-status-text');
+  const errorEl = document.getElementById('sender-error');
+  const previewWrap = document.getElementById('sender-preview');
+  const previewVideo = document.getElementById('sender-preview-video');
+
+  let peer = null;
+  let mediaConn = null;
+  let localStream = null;
+
+  function setStatus(state, text) {
+    statusWrap.style.display = '';
+    statusText.textContent = text;
+
+    statusDot.className = 'status-dot';
+    if (state === 'connected') {
+      statusDot.classList.add('status-dot-active');
+    } else if (state === 'connecting') {
+      statusDot.classList.add('status-dot-pending');
+    } else if (state === 'error') {
+      statusDot.classList.add('status-dot-inactive');
+    }
+  }
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = '';
+  }
+
+  function hideError() {
+    errorEl.style.display = 'none';
+  }
+
+  // Check for getDisplayMedia support
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    showError('Screen sharing is not supported in this browser. Please use a compatible browser on your Quest 3.');
+    startBtn.disabled = true;
+    return;
+  }
+
+  startBtn.addEventListener('click', async () => {
+    hideError();
+
+    const senderName = nameInput.value.trim() || 'Quest Headset';
+
+    // Get screen capture
+    try {
+      setStatus('connecting', 'Requesting screen capture...');
+      localStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+    } catch (err) {
+      console.error('[Cast] getDisplayMedia error:', err);
+      if (err.name === 'NotAllowedError') {
+        showError('Screen sharing permission was denied. Please allow screen capture and try again.');
+      } else if (err.name === 'NotFoundError') {
+        showError('No screen capture source found. Make sure your device supports screen sharing.');
+      } else {
+        showError(`Screen capture failed: ${err.message}`);
+      }
+      statusWrap.style.display = 'none';
+      return;
+    }
+
+    // Show preview
+    previewVideo.srcObject = localStream;
+    previewWrap.style.display = '';
+
+    // Monitor stream end (user stops sharing via browser UI)
+    localStream.getVideoTracks().forEach(track => {
+      track.addEventListener('ended', () => {
+        cleanup();
+      });
+    });
+
+    // Create PeerJS connection
+    setStatus('connecting', 'Connecting to Cast Hub...');
+
+    try {
+      peer = new Peer();
+    } catch (err) {
+      showError('Failed to initialize PeerJS. The signaling server may be unavailable.');
+      cleanup();
+      return;
+    }
+
+    peer.on('open', (myPeerId) => {
+      console.log('[Cast Sender] Peer open:', myPeerId);
+
+      const facilitatorPeerId = `ip-cast-${roomCode}`;
+
+      // Call the facilitator with our stream
+      mediaConn = peer.call(facilitatorPeerId, localStream, {
+        metadata: { name: senderName },
+      });
+
+      if (!mediaConn) {
+        showError('Failed to connect to Cast Hub. The room code may be invalid or the facilitator is not online.');
+        cleanup();
+        return;
+      }
+
+      mediaConn.on('stream', () => {
+        // Facilitator answered
+        setStatus('connected', `Connected as "${senderName}"`);
+      });
+
+      // For PeerJS, the call is considered open when the facilitator answers
+      mediaConn.on('close', () => {
+        setStatus('error', 'Disconnected from Cast Hub');
+        cleanup();
+      });
+
+      mediaConn.on('error', (err) => {
+        console.error('[Cast Sender] Media connection error:', err);
+        showError(`Connection error: ${err.message || err.type}`);
+        cleanup();
+      });
+
+      // Set connected status after a short delay (some PeerJS versions
+      // don't fire the stream event on the caller side)
+      setTimeout(() => {
+        if (mediaConn && mediaConn.open) {
+          setStatus('connected', `Connected as "${senderName}"`);
+        }
+      }, 2000);
+
+      // Switch buttons
+      startBtn.style.display = 'none';
+      stopBtn.style.display = '';
+      nameInput.disabled = true;
+    });
+
+    peer.on('error', (err) => {
+      console.error('[Cast Sender] Peer error:', err);
+      if (err.type === 'peer-unavailable') {
+        showError('Cast Hub not found. Make sure the facilitator has the hub open with this room code.');
+      } else if (err.type === 'network' || err.type === 'server-error') {
+        showError('Cannot reach the signaling server. Check your internet connection.');
+      } else {
+        showError(`Connection error: ${err.message || err.type}`);
+      }
+      cleanup();
+    });
+
+    peer.on('disconnected', () => {
+      setStatus('error', 'Disconnected from signaling server');
+    });
+  });
+
+  stopBtn.addEventListener('click', () => {
+    cleanup();
+  });
+
+  function cleanup() {
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+
+    if (mediaConn) {
+      try { mediaConn.close(); } catch { /* noop */ }
+      mediaConn = null;
+    }
+
+    if (peer) {
+      try { peer.destroy(); } catch { /* noop */ }
+      peer = null;
+    }
+
+    previewVideo.srcObject = null;
+    previewWrap.style.display = 'none';
+
+    startBtn.style.display = '';
+    stopBtn.style.display = 'none';
+    nameInput.disabled = false;
+
+    // Keep status visible if it was showing an error, otherwise hide
+    const dot = statusDot.classList;
+    if (!dot.contains('status-dot-inactive')) {
+      statusWrap.style.display = 'none';
+    }
+  }
+}
+</script>
+</body>
+</html>
