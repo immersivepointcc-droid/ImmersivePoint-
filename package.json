@@ -1,0 +1,13 @@
+{
+  "name": "immersivepoint-platform",
+  "version": "1.0.0",
+  "description": "ImmersivePoint — Career discovery and workforce development platform",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "peer": "^1.0.2"
+  }
+}
