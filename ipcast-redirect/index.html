@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImmersivePoint Cast</title>
+<script>
+  var path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (path) {
+    window.location.replace('https://immersivepoint.netlify.app/cast/#join=' + path);
+  } else {
+    window.location.replace('https://immersivepoint.netlify.app/cast/');
+  }
+</script>
+</head>
+<body style="background:#0a0e1a;color:#e0e0e0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+<p>Redirecting to ImmersivePoint Cast Hub...</p>
+</body>
+</html>

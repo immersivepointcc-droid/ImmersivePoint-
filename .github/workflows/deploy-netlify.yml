@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy-platform:
+    name: Deploy Platform
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,3 +20,18 @@ jobs:
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  deploy-cast-shortlink:
+    name: Deploy ipcast.netlify.app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy cast redirect site
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: ipcast-redirect
+          production-deploy: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_CAST_SITE_ID }}
