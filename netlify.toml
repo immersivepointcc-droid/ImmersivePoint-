@@ -41,6 +41,12 @@
   to = "/cast/index.html"
   status = 200
 
+# Short join URL for Quest 3 headsets — /j/<room_code>
+[[redirects]]
+  from = "/j/*"
+  to = "/j/index.html"
+  status = 200
+
 # Public passport share links — /p/<share_code>
 [[redirects]]
   from = "/p/*"

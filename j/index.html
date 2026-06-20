@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Join Cast · ImmersivePoint</title>
+<script>
+  var code = window.location.pathname.split('/j/')[1] || '';
+  if (code) {
+    window.location.replace('/cast/#join=' + code);
+  } else {
+    window.location.replace('/cast/');
+  }
+</script>
+</head>
+<body></body>
+</html>

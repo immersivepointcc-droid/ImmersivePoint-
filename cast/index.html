@@ -587,6 +587,7 @@
   <div class="room-code-section">
     <div class="room-code-label">Room Code</div>
     <div class="room-code-value" id="room-code"></div>
+    <div class="room-code-url" id="room-url" style="font-family:var(--font-mono);font-size:0.95rem;color:var(--cyan-glow);margin-top:var(--sp-2);opacity:0.85;">ipcast.netlify.app/j/<span id="room-code-echo"></span></div>
     <div class="room-code-actions">
       <button class="btn btn-primary" id="copy-link-btn">Copy Join Link</button>
       <button class="btn btn-ghost" id="copy-code-btn">Copy Code</button>
@@ -626,7 +627,7 @@
       <div class="how-to-step">
         <div class="how-to-step-num">1</div>
         <div class="how-to-step-text">
-          Open the <strong>Meta Quest Browser</strong> on the headset and navigate to the join link (or go to this page and enter the room code).
+          Open the <strong>Meta Quest Browser</strong> on the headset and type <strong>ipcast.netlify.app/j/CODE</strong> (replace CODE with the room code above).
         </div>
       </div>
       <div class="how-to-step">
@@ -711,7 +712,7 @@ function getRoomCodeFromURL() {
 }
 
 function buildJoinURL(roomCode) {
-  return `${location.origin}/cast/#join=${roomCode}`;
+  return `${location.origin}/j/${roomCode}`;
 }
 
 function setPeerCount(n) {
@@ -751,6 +752,8 @@ async function initFacilitatorView() {
   }
 
   document.getElementById('room-code').textContent = roomCode;
+  const codeEcho = document.getElementById('room-code-echo');
+  if (codeEcho) codeEcho.textContent = roomCode;
 
   // Copy buttons
   document.getElementById('copy-link-btn').addEventListener('click', () => {
