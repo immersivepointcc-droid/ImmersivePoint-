@@ -819,14 +819,30 @@ async function copyToClipboard(text) {
 
 const activePeers = new Map(); // peerId -> { conn, mediaConn, stream, name, element }
 
+const PEER_CONFIG = {
+  host: '0.peerjs.com',
+  port: 443,
+  secure: true,
+  path: '/',
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun.relay.metered.ca:80' }
+    ]
+  }
+};
+
 function initFacilitatorPeer(roomCode) {
   const peerId = `ip-cast-${roomCode}`;
   let peer;
 
   try {
-    peer = new Peer(peerId);
+    peer = new Peer(peerId, PEER_CONFIG);
   } catch (err) {
-    showFacilitatorError('Failed to initialize PeerJS. The PeerJS cloud server may be unavailable.');
+    showFacilitatorError('Failed to initialize PeerJS. The signaling server may be unavailable.');
     return;
   }
 
@@ -1096,7 +1112,7 @@ function initSenderView(roomCode) {
     setStatus('connecting', 'Connecting to Cast Hub...');
 
     try {
-      peer = new Peer();
+      peer = new Peer(PEER_CONFIG);
     } catch (err) {
       showError('Failed to initialize PeerJS. The signaling server may be unavailable.');
       cleanup();
