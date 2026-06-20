@@ -654,11 +654,10 @@
     <div class="sender-room-code" id="sender-room-code"></div>
 
     <div class="sender-form-group">
-      <label for="sender-name">Your Name / Headset Label</label>
+      <label for="sender-name">Headset Label</label>
       <input type="text" id="sender-name" class="input" placeholder="e.g. Headset 1, Student A" maxlength="30" autocomplete="off" />
     </div>
 
-    <button class="btn btn-primary sender-btn" id="start-cast-btn">Start Casting</button>
     <button class="btn btn-danger sender-btn" id="stop-cast-btn" style="display:none">Stop Casting</button>
 
     <div class="sender-status" id="sender-status" style="display:none">
@@ -1029,7 +1028,6 @@ function initSenderView(roomCode) {
   document.getElementById('sender-room-code').textContent = roomCode;
 
   const nameInput = document.getElementById('sender-name');
-  const startBtn = document.getElementById('start-cast-btn');
   const stopBtn = document.getElementById('stop-cast-btn');
   const statusWrap = document.getElementById('sender-status');
   const statusDot = document.getElementById('sender-status-dot');
@@ -1041,19 +1039,16 @@ function initSenderView(roomCode) {
   let peer = null;
   let mediaConn = null;
   let localStream = null;
+  let reconnectTimer = null;
+  let stopped = false;
 
   function setStatus(state, text) {
     statusWrap.style.display = '';
     statusText.textContent = text;
-
     statusDot.className = 'status-dot';
-    if (state === 'connected') {
-      statusDot.classList.add('status-dot-active');
-    } else if (state === 'connecting') {
-      statusDot.classList.add('status-dot-pending');
-    } else if (state === 'error') {
-      statusDot.classList.add('status-dot-inactive');
-    }
+    if (state === 'connected') statusDot.classList.add('status-dot-active');
+    else if (state === 'connecting') statusDot.classList.add('status-dot-pending');
+    else if (state === 'error') statusDot.classList.add('status-dot-inactive');
   }
 
   function showError(msg) {
@@ -1061,161 +1056,190 @@ function initSenderView(roomCode) {
     errorEl.style.display = '';
   }
 
-  function hideError() {
-    errorEl.style.display = 'none';
-  }
+  function hideError() { errorEl.style.display = 'none'; }
 
-  // Check for getDisplayMedia support
   if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-    showError('Screen sharing is not supported in this browser. Please use a compatible browser on your Quest 3.');
-    startBtn.disabled = true;
+    showError('Screen sharing is not supported in this browser. Use a compatible browser on Quest 3.');
     return;
   }
 
-  startBtn.addEventListener('click', async () => {
+  function getSenderName() {
+    return nameInput.value.trim() || 'Quest Headset';
+  }
+
+  async function startCasting() {
+    if (stopped) return;
     hideError();
+    const senderName = getSenderName();
 
-    const senderName = nameInput.value.trim() || 'Quest Headset';
-
-    // Get screen capture
-    try {
-      setStatus('connecting', 'Requesting screen capture...');
-      localStream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: true,
-      });
-    } catch (err) {
-      console.error('[Cast] getDisplayMedia error:', err);
-      if (err.name === 'NotAllowedError') {
-        showError('Screen sharing permission was denied. Please allow screen capture and try again.');
-      } else if (err.name === 'NotFoundError') {
-        showError('No screen capture source found. Make sure your device supports screen sharing.');
-      } else {
-        showError(`Screen capture failed: ${err.message}`);
+    if (!localStream) {
+      try {
+        setStatus('connecting', 'Requesting screen capture...');
+        localStream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true,
+        });
+      } catch (err) {
+        console.error('[Cast] getDisplayMedia error:', err);
+        if (err.name === 'NotAllowedError') {
+          showError('Screen sharing was denied. Tap the button below to retry.');
+          setStatus('error', 'Permission denied');
+          addRetryButton();
+        } else {
+          showError(`Screen capture failed: ${err.message}`);
+          scheduleReconnect();
+        }
+        return;
       }
-      statusWrap.style.display = 'none';
-      return;
+
+      previewVideo.srcObject = localStream;
+      previewWrap.style.display = '';
+      stopBtn.style.display = '';
+      nameInput.disabled = true;
+
+      localStream.getVideoTracks().forEach(track => {
+        track.addEventListener('ended', () => {
+          cleanup(true);
+        });
+      });
     }
 
-    // Show preview
-    previewVideo.srcObject = localStream;
-    previewWrap.style.display = '';
+    connectToPeer(senderName);
+  }
 
-    // Monitor stream end (user stops sharing via browser UI)
-    localStream.getVideoTracks().forEach(track => {
-      track.addEventListener('ended', () => {
-        cleanup();
-      });
-    });
-
-    // Create PeerJS connection
+  function connectToPeer(senderName) {
+    if (stopped || !localStream) return;
     setStatus('connecting', 'Connecting to Cast Hub...');
 
     try {
       peer = new Peer(PEER_CONFIG);
     } catch (err) {
-      showError('Failed to initialize PeerJS. The signaling server may be unavailable.');
-      cleanup();
+      showError('Failed to initialize PeerJS. Retrying...');
+      scheduleReconnect();
       return;
     }
 
     peer.on('open', (myPeerId) => {
       console.log('[Cast Sender] Peer open:', myPeerId);
-
       const facilitatorPeerId = `ip-cast-${roomCode}`;
 
-      // Call the facilitator with our stream
       mediaConn = peer.call(facilitatorPeerId, localStream, {
         metadata: { name: senderName },
       });
 
       if (!mediaConn) {
-        showError('Failed to connect to Cast Hub. The room code may be invalid or the facilitator is not online.');
-        cleanup();
+        showError('Hub not found. Retrying...');
+        scheduleReconnect();
         return;
       }
 
       mediaConn.on('stream', () => {
-        // Facilitator answered
+        hideError();
         setStatus('connected', `Connected as "${senderName}"`);
       });
 
-      // For PeerJS, the call is considered open when the facilitator answers
       mediaConn.on('close', () => {
-        setStatus('error', 'Disconnected from Cast Hub');
-        cleanup();
+        setStatus('error', 'Disconnected — reconnecting...');
+        destroyPeer();
+        scheduleReconnect();
       });
 
       mediaConn.on('error', (err) => {
-        console.error('[Cast Sender] Media connection error:', err);
-        showError(`Connection error: ${err.message || err.type}`);
-        cleanup();
+        console.error('[Cast Sender] Media error:', err);
+        destroyPeer();
+        scheduleReconnect();
       });
 
-      // Set connected status after a short delay (some PeerJS versions
-      // don't fire the stream event on the caller side)
       setTimeout(() => {
         if (mediaConn && mediaConn.open) {
+          hideError();
           setStatus('connected', `Connected as "${senderName}"`);
         }
       }, 2000);
-
-      // Switch buttons
-      startBtn.style.display = 'none';
-      stopBtn.style.display = '';
-      nameInput.disabled = true;
     });
 
     peer.on('error', (err) => {
       console.error('[Cast Sender] Peer error:', err);
       if (err.type === 'peer-unavailable') {
-        showError('Cast Hub not found. Make sure the facilitator has the hub open with this room code.');
+        setStatus('error', 'Hub not online yet — retrying...');
       } else if (err.type === 'network' || err.type === 'server-error') {
-        showError('Cannot reach the signaling server. Check your internet connection.');
+        setStatus('error', 'Signaling server unreachable — retrying...');
       } else {
-        showError(`Connection error: ${err.message || err.type}`);
+        setStatus('error', `Error: ${err.type} — retrying...`);
       }
-      cleanup();
+      destroyPeer();
+      scheduleReconnect();
     });
 
     peer.on('disconnected', () => {
-      setStatus('error', 'Disconnected from signaling server');
+      if (!stopped) {
+        setStatus('error', 'Disconnected — reconnecting...');
+        destroyPeer();
+        scheduleReconnect();
+      }
     });
-  });
+  }
 
-  stopBtn.addEventListener('click', () => {
-    cleanup();
-  });
+  function scheduleReconnect() {
+    if (stopped || reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      startCasting();
+    }, 3000);
+  }
 
-  function cleanup() {
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
-    }
+  function addRetryButton() {
+    if (document.getElementById('retry-cast-btn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'retry-cast-btn';
+    btn.className = 'btn btn-primary sender-btn';
+    btn.textContent = 'Retry Cast';
+    btn.style.marginTop = 'var(--sp-3)';
+    btn.addEventListener('click', () => {
+      btn.remove();
+      startCasting();
+    });
+    stopBtn.parentNode.insertBefore(btn, stopBtn.nextSibling);
+  }
 
+  function destroyPeer() {
     if (mediaConn) {
       try { mediaConn.close(); } catch { /* noop */ }
       mediaConn = null;
     }
-
     if (peer) {
       try { peer.destroy(); } catch { /* noop */ }
       peer = null;
     }
+  }
+
+  stopBtn.addEventListener('click', () => {
+    cleanup(true);
+  });
+
+  function cleanup(fullStop) {
+    stopped = !!fullStop;
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+    destroyPeer();
 
     previewVideo.srcObject = null;
     previewWrap.style.display = 'none';
-
-    startBtn.style.display = '';
     stopBtn.style.display = 'none';
     nameInput.disabled = false;
 
-    // Keep status visible if it was showing an error, otherwise hide
-    const dot = statusDot.classList;
-    if (!dot.contains('status-dot-inactive')) {
-      statusWrap.style.display = 'none';
+    if (stopped) {
+      setStatus('error', 'Casting stopped');
+      addRetryButton();
     }
   }
+
+  // Auto-start casting on page load
+  startCasting();
 }
 </script>
 </body>
