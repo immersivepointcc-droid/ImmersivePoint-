@@ -1187,7 +1187,7 @@ function restartApp(){
 }
 
 /* ---------- PASSPORT BUILDER HANDOFF ---------- */
-var PASSPORT_URL = 'https://passport-builder.netlify.app/';
+var PASSPORT_URL = '/passport/';
 
 function buildSparkPayload(){
   var a = state.archetype || {};
@@ -1242,6 +1242,28 @@ function sendToPassport(){
 
   try{
     localStorage.setItem('imaginationSparkResult', JSON.stringify(payload));
+  }catch(e){}
+
+  // Save to shared store for cross-module persistence
+  try{
+    var storeRecord = {
+      id: payload.sessionId,
+      candidate_name: payload.name,
+      archetype: payload.archetype,
+      archetype_who: payload.archetypeWho,
+      riasec_code: payload.riasecCode,
+      scores: payload.scores,
+      behavioral: payload.behavioral,
+      careers: payload.careers,
+      status: 'completed',
+      completed_at: payload.issuedAt,
+    };
+    var sessions = [];
+    try { sessions = JSON.parse(localStorage.getItem('ip_spark_sessions') || '[]'); } catch(e2){}
+    var idx = sessions.findIndex(function(s){ return s.id === storeRecord.id; });
+    if(idx >= 0){ sessions[idx] = Object.assign(sessions[idx], storeRecord); }
+    else { storeRecord.created_at = new Date().toISOString(); sessions.unshift(storeRecord); }
+    localStorage.setItem('ip_spark_sessions', JSON.stringify(sessions));
   }catch(e){}
 
   var url = PASSPORT_URL + '?' + sparkPayloadToParams(payload);

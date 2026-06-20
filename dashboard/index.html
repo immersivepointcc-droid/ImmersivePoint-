@@ -658,6 +658,9 @@ function buildDashboard(ctx) {
       </div>
     </div>`;
 
+  // ---- Pathway Pipeline (all roles) ----
+  html += buildPathwayPipeline(ctx);
+
   // ---- User role: My Journey section ----
   if (role === 'user') {
     html += buildMyJourney(ctx);
@@ -677,6 +680,51 @@ function buildDashboard(ctx) {
   html += buildRecentActivity(ctx);
 
   return html;
+}
+
+/* ================================================================
+   Pathway Pipeline
+   ================================================================ */
+
+function buildPathwayPipeline({ sessions, passports, contacts }) {
+  const completedSparks = sessions.filter(s => s.status === 'completed' || s.archetype || s.completed_at);
+  const linkedPassports = passports.filter(p => p.spark_session_id);
+  const conversionRate = completedSparks.length > 0
+    ? Math.round((linkedPassports.length / completedSparks.length) * 100)
+    : 0;
+
+  const stages = [
+    { label: 'Spark Discovery', count: sessions.length, icon: '&#10022;', color: 'var(--cyan)', desc: 'Career assessments started' },
+    { label: 'Completed', count: completedSparks.length, icon: '&#10003;', color: 'var(--success)', desc: 'RIASEC profiles generated' },
+    { label: 'Passport Built', count: passports.length, icon: '&#9918;', color: 'var(--purple-glow)', desc: 'Credentials assembled' },
+    { label: 'CRM Tracked', count: contacts.length, icon: '&#9784;', color: 'var(--amber)', desc: 'Contacts in pipeline' },
+  ];
+
+  return `
+    <div class="section-header mt-6">
+      <h3>Pathway Pipeline</h3>
+      <span style="font-size:0.75rem;color:var(--ink-faint);">Spark &rarr; Passport &rarr; CRM</span>
+    </div>
+    <div class="card mb-6" style="padding:var(--sp-5);">
+      <div style="display:flex;align-items:center;gap:0;justify-content:space-between;flex-wrap:wrap;">
+        ${stages.map((s, i) => `
+          <div style="flex:1;min-width:120px;text-align:center;position:relative;">
+            <div style="font-size:1.8rem;margin-bottom:var(--sp-2);">${s.icon}</div>
+            <div style="font-family:var(--font-heading);font-size:1.5rem;font-weight:700;color:${s.color};">${s.count}</div>
+            <div style="font-size:0.8rem;font-weight:600;color:var(--ink);margin-top:var(--sp-1);">${s.label}</div>
+            <div style="font-size:0.7rem;color:var(--ink-faint);margin-top:2px;">${s.desc}</div>
+          </div>
+          ${i < stages.length - 1 ? `<div style="color:var(--ink-faint);font-size:1.2rem;padding:0 var(--sp-2);flex-shrink:0;">&rarr;</div>` : ''}
+        `).join('')}
+      </div>
+      ${completedSparks.length > 0 ? `
+        <div style="margin-top:var(--sp-4);padding-top:var(--sp-4);border-top:1px solid var(--border);display:flex;gap:var(--sp-6);flex-wrap:wrap;">
+          <div style="font-size:0.8rem;color:var(--ink-dim);">
+            Spark &rarr; Passport conversion: <span style="font-weight:600;color:${conversionRate >= 70 ? 'var(--success)' : conversionRate >= 40 ? 'var(--amber)' : 'var(--danger)'};">${conversionRate}%</span>
+          </div>
+        </div>
+      ` : ''}
+    </div>`;
 }
 
 /* ================================================================

@@ -804,6 +804,7 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
   <div class="topbar-brand">Immersive<span>Point</span> &nbsp;/&nbsp; <span>Passport Builder</span></div>
   <div class="topbar-center">Facilitator Tool &nbsp;·&nbsp; Digital Credential Authoring</div>
   <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" onclick="newPassport()">+ New</button>
     <button class="btn btn-ghost btn-sm" onclick="resetForm()">↺ Reset</button>
     <button class="btn btn-ghost btn-sm" onclick="copyJSON()">{ } Export JSON</button>
     <button class="btn btn-cyan btn-sm" onclick="printPassport()">⬇ Save Passport</button>
@@ -843,6 +844,15 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
               <button class="btn btn-cyan btn-sm" onclick="importSparkResults()">⬇ Pour Into Passport</button>
               <button class="btn btn-ghost btn-sm" onclick="clearSpark()">✕ Clear</button>
             </div>
+          </div>
+
+          <!-- Past Spark Sessions from shared store -->
+          <div id="sparkSessionBrowser" style="margin-top:0.6rem;">
+            <label style="margin-bottom:0.3rem;display:flex;align-items:center;gap:0.5rem;">
+              Past Spark Sessions
+              <button class="btn btn-ghost btn-sm" onclick="loadSparkSessions()" title="Refresh sessions list" style="padding:0.15rem 0.5rem;font-size:0.7rem;">↻</button>
+            </label>
+            <div id="sparkSessionList" style="max-height:180px;overflow-y:auto;"></div>
           </div>
 
           <!-- Manual JSON paste -->
@@ -2306,8 +2316,239 @@ function joinList(arr) {
 
 // ══════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════
+// SHARED STORE INTEGRATION — Persist passport + browse Spark sessions
+// ══════════════════════════════════════════════════════════
+
+const PASSPORT_STORE_KEY = 'ip_passports';
+const SPARK_STORE_KEY = 'ip_spark_sessions';
+const ACTIVE_PASSPORT_KEY = 'ip_active_passport_id';
+
+function autoSavePassport() {
+  try {
+    const id = localStorage.getItem(ACTIVE_PASSPORT_KEY) || crypto.randomUUID();
+    localStorage.setItem(ACTIVE_PASSPORT_KEY, id);
+
+    const record = {
+      id,
+      full_name: state.name,
+      date: state.date,
+      cohort: state.cohort,
+      site: state.site,
+      facilitator: state.facilitator,
+      pillar_scores: state.pillarScores,
+      indicators: state.indicators,
+      credentials: state.credentials,
+      notes: state.notes,
+      flawless: state.flawless,
+      spark_session_id: sparkData ? (sparkData.sessionId || null) : null,
+      updated_at: new Date().toISOString(),
+    };
+
+    let passports = [];
+    try { passports = JSON.parse(localStorage.getItem(PASSPORT_STORE_KEY) || '[]'); } catch(e){}
+    const idx = passports.findIndex(p => p.id === id);
+    if (idx >= 0) {
+      passports[idx] = { ...passports[idx], ...record };
+    } else {
+      record.created_at = new Date().toISOString();
+      record.share_code = generateShareCode();
+      passports.unshift(record);
+    }
+    localStorage.setItem(PASSPORT_STORE_KEY, JSON.stringify(passports));
+  } catch(e) { /* localStorage full or unavailable */ }
+}
+
+function generateShareCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function loadSavedPassport() {
+  try {
+    const id = localStorage.getItem(ACTIVE_PASSPORT_KEY);
+    if (!id) return false;
+    const passports = JSON.parse(localStorage.getItem(PASSPORT_STORE_KEY) || '[]');
+    const saved = passports.find(p => p.id === id);
+    if (!saved) return false;
+
+    if (saved.full_name) { state.name = saved.full_name; document.getElementById('f_name').value = saved.full_name; }
+    if (saved.date) { state.date = saved.date; document.getElementById('f_date').value = saved.date; }
+    if (saved.cohort) { state.cohort = saved.cohort; document.getElementById('f_cohort').value = saved.cohort; }
+    if (saved.site) { state.site = saved.site; document.getElementById('f_site').value = saved.site; }
+    if (saved.facilitator) { state.facilitator = saved.facilitator; document.getElementById('f_facilitator').value = saved.facilitator; }
+    if (saved.pillar_scores) {
+      state.pillarScores = saved.pillar_scores;
+      Object.entries(saved.pillar_scores).forEach(([pid, val]) => { if (val > 0) setPillar(pid, val); });
+    }
+    if (saved.indicators) {
+      state.indicators = saved.indicators;
+      Object.entries(saved.indicators).forEach(([iid, val]) => {
+        if (val > 0) {
+          const btns = document.querySelectorAll(`#ib_${iid} .score-btn`);
+          btns.forEach((b, i) => { b.classList.toggle('active', i + 1 === val); });
+        }
+      });
+    }
+    if (saved.credentials && saved.credentials.length) {
+      state.credentials = saved.credentials;
+      credCounter = saved.credentials.length;
+      renderCredList();
+    }
+    if (saved.notes) { state.notes = saved.notes; document.getElementById('f_notes').value = saved.notes; }
+    if (saved.flawless) { state.flawless = true; document.getElementById('f_flawless').checked = true; }
+
+    // Reload linked Spark session
+    if (saved.spark_session_id) {
+      const sessions = JSON.parse(localStorage.getItem(SPARK_STORE_KEY) || '[]');
+      const session = sessions.find(s => s.id === saved.spark_session_id);
+      if (session) {
+        acceptSparkData(sparkSessionToSparkData(session));
+      }
+    }
+
+    update();
+    return true;
+  } catch(e) { return false; }
+}
+
+function sparkSessionToSparkData(session) {
+  return {
+    name: session.candidate_name || '',
+    archetype: session.archetype || '',
+    archetypeWho: session.archetype_who || '',
+    riasecCode: session.riasec_code || '',
+    riasec: session.scores || {},
+    behavioral: session.behavioral || {},
+    careers: (session.careers || []).map(c => ({
+      title: c.name || c.title || '',
+      name: c.name || c.title || '',
+      match: c.score || c.match || 0,
+      pay: c.pay || '',
+    })),
+    sessionId: session.id,
+  };
+}
+
+function loadSparkSessions() {
+  const listEl = document.getElementById('sparkSessionList');
+  if (!listEl) return;
+
+  let sessions = [];
+  try { sessions = JSON.parse(localStorage.getItem(SPARK_STORE_KEY) || '[]'); } catch(e){}
+
+  if (!sessions.length) {
+    listEl.innerHTML = '<div style="color:var(--muted);font-size:0.75rem;padding:0.4rem;">No past sessions found. Complete a Spark assessment first.</div>';
+    return;
+  }
+
+  listEl.innerHTML = sessions.map((s, i) => {
+    const name = s.candidate_name || 'Unnamed';
+    const archetype = s.archetype || '—';
+    const date = s.completed_at ? new Date(s.completed_at).toLocaleDateString() : '—';
+    const topCareer = s.careers && s.careers[0] ? (s.careers[0].name || s.careers[0].title || '') : '—';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.35rem 0.5rem;background:var(--navy-m);border:1px solid var(--navy-ll);border-radius:6px;margin-bottom:0.3rem;cursor:pointer;transition:border-color 0.15s;" onmouseenter="this.style.borderColor='var(--cyan)'" onmouseleave="this.style.borderColor='var(--navy-ll)'" onclick="importSparkSession(${i})">
+      <div style="min-width:0;">
+        <div style="font-size:0.8rem;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeH(name)} — ${escapeH(archetype)}</div>
+        <div style="font-size:0.65rem;color:var(--muted);">${date} · ${escapeH(topCareer)}</div>
+      </div>
+      <button class="btn btn-cyan btn-sm" onclick="event.stopPropagation();importSparkSession(${i})" style="padding:0.15rem 0.5rem;font-size:0.65rem;flex-shrink:0;">Load</button>
+    </div>`;
+  }).join('');
+}
+
+function escapeH(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function importSparkSession(index) {
+  let sessions = [];
+  try { sessions = JSON.parse(localStorage.getItem(SPARK_STORE_KEY) || '[]'); } catch(e){}
+  const session = sessions[index];
+  if (!session) return;
+
+  const data = sparkSessionToSparkData(session);
+  acceptSparkData(data);
+  toast('Spark session loaded: ' + (session.archetype || session.candidate_name || 'Session'));
+}
+
+// Debounced auto-save on any state change
+let _saveTimer = null;
+function scheduleAutoSave() {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(autoSavePassport, 500);
+}
+
+// Patch update() to trigger auto-save
+const _originalUpdate = update;
+// We need to hook into state changes. Override key functions.
+const _origSetPillar = setPillar;
+
+// Hook into input fields for auto-save
+function hookAutoSave() {
+  ['f_name','f_date','f_cohort','f_site','f_facilitator','f_notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => {
+      state[{f_name:'name',f_date:'date',f_cohort:'cohort',f_site:'site',f_facilitator:'facilitator',f_notes:'notes'}[id]] = el.value;
+      scheduleAutoSave();
+    });
+  });
+
+  const flawlessEl = document.getElementById('f_flawless');
+  if (flawlessEl) flawlessEl.addEventListener('change', () => { scheduleAutoSave(); });
+
+  // Observe pillar/indicator score button clicks
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('score-btn')) {
+      setTimeout(scheduleAutoSave, 50);
+    }
+  });
+}
+
+// ── NEW PASSPORT ──────────────────────────────────────────
+function newPassport() {
+  localStorage.removeItem(ACTIVE_PASSPORT_KEY);
+  state = {
+    name: '', date: new Date().toISOString().split('T')[0], cohort: '', site: '', facilitator: '',
+    pillarScores: { p1: 0, p2: 0, p3: 0 },
+    indicators: { i1:0,i2:0,i3:0,i4:0,i5:0,i6:0,i7:0,i8:0,i9:0 },
+    credentials: [],
+    notes: '',
+    flawless: false,
+  };
+  credCounter = 0;
+  sparkData = null;
+  ['f_name','f_cohort','f_site','f_facilitator','f_notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f_date').value = state.date;
+  document.getElementById('f_flawless').checked = false;
+  renderPillarScores();
+  renderIndicators();
+  renderCredList();
+  clearSpark();
+  update();
+  toast('New passport started');
+}
+
 // ── BOOT ─────────────────────────────────────────────────
-init();
+const hasSaved = loadSavedPassport();
+if (!hasSaved) init();
+else {
+  // Still run polling for new Spark data
+  setTimeout(pollSpark, 150);
+  setTimeout(pollImmerse, 200);
+  setInterval(() => { if (!sparkData) pollSpark(); }, 8000);
+  setInterval(() => { if (!immerseData) pollImmerse(); }, 8000);
+  update();
+}
+hookAutoSave();
+loadSparkSessions();
 </script>
 </body>
 </html>
