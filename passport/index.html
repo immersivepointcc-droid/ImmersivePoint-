@@ -758,6 +758,84 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
 .immerse-json-area:focus { border-color: var(--purple); }
 .immerse-json-area::placeholder { color: var(--muted); opacity: 0.6; }
 
+/* ── CAST CAPTURES VIEWER ─────────────────────────────────── */
+.cast-captures-panel {
+  background: linear-gradient(135deg, rgba(123,47,190,0.08) 0%, rgba(0,180,216,0.05) 100%);
+  border: 1px solid rgba(123,47,190,0.3);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  margin-top: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+.cast-captures-panel::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #c084fc, var(--cyan));
+}
+.cast-captures-header {
+  display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.8rem;
+}
+.cast-captures-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.62rem; font-weight: 700;
+  color: #c084fc; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.cast-captures-count {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.52rem; color: var(--navy);
+  background: #c084fc; border-radius: 9px;
+  padding: 0.1rem 0.45rem; font-weight: 700;
+  min-width: 1.2rem; text-align: center;
+}
+.cast-captures-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+@media (max-width: 600px) {
+  .cast-captures-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.cast-cap-thumb {
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(192,132,252,0.15);
+  border-radius: 7px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+}
+.cast-cap-thumb:hover {
+  border-color: #c084fc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 18px rgba(123,47,190,0.25);
+}
+.cast-cap-thumb img {
+  width: 100%; height: 80px; object-fit: cover; display: block;
+}
+.cast-cap-thumb-info {
+  padding: 0.35rem 0.45rem;
+}
+.cast-cap-thumb-name {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.52rem; color: #c084fc;
+  letter-spacing: 0.06em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cast-cap-thumb-time {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.46rem; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 0.15rem;
+}
+.cast-cap-thumb-actions {
+  padding: 0 0.45rem 0.35rem;
+  display: flex; gap: 0.3rem;
+}
+.cast-cap-empty {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.58rem; color: var(--muted);
+  letter-spacing: 0.06em; text-align: center;
+  padding: 1.2rem 0; opacity: 0.7;
+}
+
 /* ── PRINT STYLES ───────────────────────────────────────── */
 @media print {
   .topbar, .editor-panel, .preview-toolbar, .topbar-actions { display: none !important; }
@@ -907,6 +985,19 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
             <textarea class="immerse-json-area" id="immerseJsonInput"
               placeholder='{"scenario":"Healthcare ED Triage","patients":["Sarah","Marcus","Del"],"telemetry":{"completion":100,"accuracy":94,"protocol":100,"timeSec":340},"facilitator":{"composure":4,"decisionQuality":3,"communication":4}}'
               oninput="tryParseImmerseJSON()"></textarea>
+          </div>
+
+          <!-- Cast Captures Viewer -->
+          <div class="cast-captures-panel">
+            <div class="cast-captures-header">
+              <span class="cast-captures-title">CAST CAPTURES</span>
+              <span class="cast-captures-count" id="castCapturesCount">0</span>
+              <div style="flex:1;"></div>
+              <button class="btn btn-ghost btn-sm" onclick="loadCastCaptures()" title="Load captures from localStorage">↻ Load</button>
+            </div>
+            <div id="castCapturesGrid" class="cast-captures-grid">
+              <div class="cast-cap-empty" id="castCapturesEmpty">No cast captures found. Captures taken in Cast Hub will appear here.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1126,6 +1217,7 @@ let state = {
   credentials: [],
   notes: '',
   flawless: false,
+  immerse_captures: [],
 };
 
 let credCounter = 0;
@@ -2342,6 +2434,7 @@ function autoSavePassport() {
       notes: state.notes,
       flawless: state.flawless,
       spark_session_id: sparkData ? (sparkData.sessionId || null) : null,
+      immerse_captures: state.immerse_captures || [],
       updated_at: new Date().toISOString(),
     };
 
@@ -2364,6 +2457,88 @@ function generateShareCode() {
   let code = '';
   for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
+}
+
+// ── CAST CAPTURES VIEWER ──────────────────────────────────
+var CAST_CAPTURES_KEY = 'ip_cast_captures';
+
+function loadCastCaptures() {
+  var grid = document.getElementById('castCapturesGrid');
+  var countEl = document.getElementById('castCapturesCount');
+  var emptyEl = document.getElementById('castCapturesEmpty');
+  if (!grid) return;
+
+  var captures = [];
+  try { captures = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
+
+  if (countEl) countEl.textContent = captures.length;
+
+  if (!captures.length) {
+    grid.innerHTML = '<div class="cast-cap-empty" id="castCapturesEmpty">No cast captures found. Captures taken in Cast Hub will appear here.</div>';
+    return;
+  }
+
+  var html = '';
+  captures.forEach(function(cap, idx) {
+    var ts = '';
+    try { ts = new Date(cap.timestamp).toLocaleString(); } catch(e) { ts = cap.timestamp || ''; }
+    var peerLabel = cap.peerName || cap.peerId || 'Unknown';
+    var roomLabel = cap.roomCode || '';
+    html += '<div class="cast-cap-thumb" onclick="viewCastCapture(' + idx + ')" title="Click to view full size">';
+    html += '<img src="' + (cap.imageData || '') + '" alt="Capture of ' + peerLabel + '">';
+    html += '<div class="cast-cap-thumb-info">';
+    html += '<div class="cast-cap-thumb-name">' + peerLabel + (roomLabel ? ' · ' + roomLabel : '') + '</div>';
+    html += '<div class="cast-cap-thumb-time">' + ts + '</div>';
+    html += '</div>';
+    html += '<div class="cast-cap-thumb-actions">';
+    html += '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); attachCaptureToPassport(' + idx + ')" title="Attach to passport">⬇ Attach</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  grid.innerHTML = html;
+}
+
+function viewCastCapture(index) {
+  var captures = [];
+  try { captures = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
+  if (index < 0 || index >= captures.length) return;
+  var cap = captures[index];
+  if (!cap.imageData) return;
+  var win = window.open('');
+  if (win) {
+    var peerLabel = cap.peerName || cap.peerId || 'Capture';
+    win.document.title = 'Cast Capture — ' + peerLabel;
+    win.document.body.style.cssText = 'margin:0;background:#0D1B2A;display:flex;align-items:center;justify-content:center;min-height:100vh;';
+    var img = win.document.createElement('img');
+    img.src = cap.imageData;
+    img.style.cssText = 'max-width:95vw;max-height:95vh;border-radius:8px;box-shadow:0 0 40px rgba(123,47,190,0.4);';
+    win.document.body.appendChild(img);
+  }
+}
+
+function attachCaptureToPassport(index) {
+  var captures = [];
+  try { captures = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
+  if (index < 0 || index >= captures.length) return;
+  var cap = captures[index];
+
+  state.immerse_captures = state.immerse_captures || [];
+  // Avoid duplicates by id
+  var exists = state.immerse_captures.some(function(c) { return c.id === cap.id; });
+  if (exists) {
+    toast('Capture already attached to passport');
+    return;
+  }
+  state.immerse_captures.push({
+    id: cap.id,
+    roomCode: cap.roomCode,
+    peerName: cap.peerName,
+    peerId: cap.peerId,
+    timestamp: cap.timestamp,
+    imageData: cap.imageData,
+  });
+  autoSavePassport();
+  toast('Capture attached to passport (' + state.immerse_captures.length + ' total)');
 }
 
 function loadSavedPassport() {
@@ -2399,6 +2574,9 @@ function loadSavedPassport() {
     }
     if (saved.notes) { state.notes = saved.notes; document.getElementById('f_notes').value = saved.notes; }
     if (saved.flawless) { state.flawless = true; document.getElementById('f_flawless').checked = true; }
+    if (saved.immerse_captures && saved.immerse_captures.length) {
+      state.immerse_captures = saved.immerse_captures;
+    }
 
     // Reload linked Spark session
     if (saved.spark_session_id) {
@@ -2549,6 +2727,7 @@ else {
 }
 hookAutoSave();
 loadSparkSessions();
+loadCastCaptures();
 </script>
 </body>
 </html>

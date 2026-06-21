@@ -287,6 +287,167 @@
     background: rgba(239, 68, 68, 0.1);
   }
 
+  .feed-card-actions .capture-btn:hover {
+    color: #c084fc;
+    border-color: rgba(123, 47, 190, 0.4);
+    background: rgba(123, 47, 190, 0.1);
+  }
+
+  .capture-flash {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
+    z-index: 10;
+    animation: flash-fade 0.3s ease-out forwards;
+  }
+
+  @keyframes flash-fade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Captures gallery */
+  .captures-section {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-4) var(--sp-5);
+    margin: var(--sp-4) var(--sp-6);
+  }
+
+  .captures-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-3);
+  }
+
+  .captures-header h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #c084fc;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .capture-count-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    background: rgba(123, 47, 190, 0.2);
+    border: 1px solid rgba(123, 47, 190, 0.3);
+    color: #c084fc;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .captures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .capture-thumb {
+    position: relative;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid rgba(123, 47, 190, 0.2);
+    cursor: pointer;
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+  }
+
+  .capture-thumb:hover {
+    border-color: rgba(123, 47, 190, 0.5);
+    transform: translateY(-2px);
+  }
+
+  .capture-thumb img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+    background: var(--navy-3);
+  }
+
+  .capture-thumb-info {
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--surface-2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .capture-thumb-name {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--ink-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .capture-thumb-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .capture-thumb-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 4px;
+    color: var(--danger);
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .capture-thumb:hover .capture-thumb-delete {
+    display: flex;
+  }
+
+  .captures-empty {
+    text-align: center;
+    padding: var(--sp-6);
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+  }
+
+  /* Lightbox */
+  .capture-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .capture-lightbox.open {
+    display: flex;
+  }
+
+  .capture-lightbox img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 0 40px rgba(123, 47, 190, 0.3);
+  }
+
   /* Empty state */
   .empty-state {
     grid-column: 1 / -1;
@@ -618,6 +779,24 @@
       <div class="empty-state-text">Waiting for Quest 3 headsets to connect...</div>
       <div class="empty-state-hint">Share the room code or join link with headset users</div>
     </div>
+  </div>
+
+  <!-- Captures gallery -->
+  <div class="captures-section" id="captures-section" style="display:none">
+    <div class="captures-header">
+      <h3>Session Captures <span class="capture-count-badge" id="capture-count">0</span></h3>
+      <div style="display:flex;gap:var(--sp-2)">
+        <button class="btn btn-ghost btn-sm" id="clear-captures-btn" title="Clear all captures">Clear All</button>
+      </div>
+    </div>
+    <div class="captures-grid" id="captures-grid">
+      <div class="captures-empty" id="captures-empty">No captures yet — use the camera button on any feed to take a screenshot</div>
+    </div>
+  </div>
+
+  <!-- Lightbox overlay -->
+  <div class="capture-lightbox" id="capture-lightbox">
+    <img id="lightbox-img" src="" alt="Capture" />
   </div>
 
   <!-- How to cast -->
@@ -990,6 +1169,7 @@ function addFeedCard(peerId, name, stream, mediaConn) {
       <span class="feed-card-name">${escapeHtml(name)}</span>
     </div>
     <div class="feed-card-actions">
+      <button class="capture-btn" title="Capture screenshot">&#x1F4F7;</button>
       <button class="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
       <button class="disconnect-btn" title="Disconnect">&#x2715;</button>
     </div>
@@ -1006,6 +1186,11 @@ function addFeedCard(peerId, name, stream, mediaConn) {
     } else if (video.webkitRequestFullscreen) {
       video.webkitRequestFullscreen();
     }
+  });
+
+  // Capture screenshot
+  bar.querySelector('.capture-btn').addEventListener('click', () => {
+    captureFrame(video, name, peerId);
   });
 
   // Disconnect
@@ -1054,6 +1239,137 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+/* ================================================================
+   CAPTURE SYSTEM — Screenshots from feeds → localStorage → Passport
+   ================================================================ */
+
+const CAST_CAPTURES_KEY = 'ip_cast_captures';
+
+function getCapturesFromStorage() {
+  try { return JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch { return []; }
+}
+
+function saveCaptureToStorage(capture) {
+  const captures = getCapturesFromStorage();
+  captures.unshift(capture);
+  localStorage.setItem(CAST_CAPTURES_KEY, JSON.stringify(captures));
+}
+
+function captureFrame(videoEl, peerName, peerId) {
+  if (!videoEl || videoEl.readyState < 2) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = videoEl.videoWidth || 1280;
+  canvas.height = videoEl.videoHeight || 720;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+  const imageData = canvas.toDataURL('image/jpeg', 0.85);
+  const roomCode = sessionStorage.getItem('ip_cast_room_code') || '';
+  const capture = {
+    id: crypto.randomUUID(),
+    roomCode,
+    peerName: peerName || 'Unknown',
+    peerId: peerId || '',
+    timestamp: new Date().toISOString(),
+    imageData,
+  };
+
+  saveCaptureToStorage(capture);
+
+  // Flash effect on the feed card
+  const card = videoEl.closest('.feed-card');
+  if (card) {
+    const flash = document.createElement('div');
+    flash.className = 'capture-flash';
+    card.appendChild(flash);
+    setTimeout(() => flash.remove(), 400);
+  }
+
+  renderCaptures();
+}
+
+function renderCaptures() {
+  const section = document.getElementById('captures-section');
+  const grid = document.getElementById('captures-grid');
+  const empty = document.getElementById('captures-empty');
+  const badge = document.getElementById('capture-count');
+  if (!section || !grid) return;
+
+  const captures = getCapturesFromStorage();
+
+  if (captures.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = '';
+  badge.textContent = captures.length;
+  if (empty) empty.style.display = 'none';
+
+  grid.innerHTML = '';
+  captures.forEach((cap, i) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'capture-thumb';
+
+    const time = new Date(cap.timestamp);
+    const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    thumb.innerHTML = `
+      <img src="${cap.imageData}" alt="Capture from ${escapeHtml(cap.peerName)}" loading="lazy" />
+      <div class="capture-thumb-info">
+        <span class="capture-thumb-name">${escapeHtml(cap.peerName)}</span>
+        <span class="capture-thumb-time">${timeStr}</span>
+      </div>
+      <button class="capture-thumb-delete" data-idx="${i}" title="Delete capture">&times;</button>
+    `;
+
+    thumb.querySelector('img').addEventListener('click', () => openLightbox(cap.imageData));
+    thumb.querySelector('.capture-thumb-delete').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteCapture(i);
+    });
+
+    grid.appendChild(thumb);
+  });
+}
+
+function deleteCapture(index) {
+  const captures = getCapturesFromStorage();
+  captures.splice(index, 1);
+  localStorage.setItem(CAST_CAPTURES_KEY, JSON.stringify(captures));
+  renderCaptures();
+}
+
+function openLightbox(src) {
+  const lb = document.getElementById('capture-lightbox');
+  const img = document.getElementById('lightbox-img');
+  if (lb && img) {
+    img.src = src;
+    lb.classList.add('open');
+  }
+}
+
+// Wire gallery controls
+(function wireCaptureControls() {
+  const lb = document.getElementById('capture-lightbox');
+  if (lb) {
+    lb.addEventListener('click', () => lb.classList.remove('open'));
+  }
+
+  const clearBtn = document.getElementById('clear-captures-btn');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (confirm('Delete all captures from this session?')) {
+        localStorage.removeItem(CAST_CAPTURES_KEY);
+        renderCaptures();
+      }
+    });
+  }
+
+  renderCaptures();
+})();
 
 /* ================================================================
    SENDER / HEADSET VIEW
