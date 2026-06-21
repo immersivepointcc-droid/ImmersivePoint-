@@ -91,16 +91,7 @@ const server = http.createServer((req, res) => {
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
     };
-    if (ext === '.html') {
-      headers['Content-Security-Policy'] = [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com",
-        "img-src 'self' data: https:",
-        "connect-src 'self' ws://localhost:9000 https://script.google.com https://script.googleusercontent.com",
-      ].join('; ');
-    }
+    headers['Access-Control-Allow-Origin'] = '*';
     res.writeHead(200, headers);
     res.end(data);
   } catch (err) {
