@@ -107,7 +107,8 @@ function handleRequest(e) {
         break;
 
       case 'delete':
-        result = deleteRow(sheet, params.id);
+        const delBody = JSON.parse(e.postData ? e.postData.contents : '{}');
+        result = deleteRow(sheet, delBody.id || params.id);
         break;
 
       case 'seed_careers':
