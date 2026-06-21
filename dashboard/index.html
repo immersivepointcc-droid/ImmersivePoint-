@@ -1164,20 +1164,34 @@ function wireSettingsListeners() {
     }
   });
 
-  // Sync Now
+  // Sync Now — push local data to cloud, then pull cloud data back
   syncBtn.addEventListener('click', async () => {
-    const url = googleSync.getScriptUrl();
-    if (!url) { showStatus('Save a URL first before syncing.', 'error'); return; }
-    showStatus('Syncing all data...', 'info');
+    if (!googleSync.isConfigured()) { showStatus('Save a URL first before syncing.', 'error'); return; }
+    showStatus('Pushing local data to Google Sheets...', 'info');
     syncBtn.disabled = true;
     try {
-      const res = await fetch(`${url}?action=sync_all`);
-      const json = await res.json();
-      if (json.error) {
-        showStatus('Sync failed: ' + (json.error.message || json.error), 'error');
-      } else {
-        showStatus('Full sync completed successfully!', 'success');
+      const { syncAllToCloud, syncAllFromCloud } = await import('/shared/store.js');
+
+      const pushResult = await syncAllToCloud();
+      if (pushResult.error) {
+        showStatus('Push failed: ' + pushResult.error, 'error');
+        syncBtn.disabled = false;
+        return;
       }
+
+      showStatus('Pulling cloud data back...', 'info');
+      const pullResult = await syncAllFromCloud();
+      if (pullResult.error) {
+        showStatus('Pull failed: ' + pullResult.error, 'error');
+        syncBtn.disabled = false;
+        return;
+      }
+
+      const pushSummary = Object.entries(pushResult.results)
+        .map(([k, v]) => `${k}: ${v.pushed} pushed`).join(', ');
+      const pullSummary = Object.entries(pullResult.results)
+        .map(([k, v]) => `${k}: ${v.merged || 0} merged`).join(', ');
+      showStatus(`Sync complete! Push: ${pushSummary}. Pull: ${pullSummary}`, 'success');
     } catch (err) {
       showStatus('Sync failed: ' + err.message, 'error');
     } finally {
