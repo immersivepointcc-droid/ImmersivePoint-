@@ -835,6 +835,30 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
   letter-spacing: 0.06em; text-align: center;
   padding: 1.2rem 0; opacity: 0.7;
 }
+.cast-cap-thumb-video {
+  position: relative;
+}
+.cast-cap-thumb-video .cast-cap-video-preview {
+  width: 100%; height: 80px; object-fit: cover; display: block;
+  background: rgba(0,0,0,0.5);
+}
+.cast-cap-thumb-video .cast-cap-play-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.35); pointer-events: none;
+}
+.cast-cap-thumb-video .cast-cap-play-overlay span {
+  font-size: 1.6rem; color: #fff; opacity: 0.85;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.cast-cap-thumb-video .cast-cap-duration-badge {
+  position: absolute; top: 62px; right: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.46rem; color: #fff;
+  background: rgba(0,0,0,0.65); border-radius: 4px;
+  padding: 0.08rem 0.3rem; letter-spacing: 0.04em;
+  pointer-events: none;
+}
 
 /* ── PRINT STYLES ───────────────────────────────────────── */
 @media print {
@@ -993,10 +1017,10 @@ textarea { resize: vertical; min-height: 68px; line-height: 1.5; }
               <span class="cast-captures-title">CAST CAPTURES</span>
               <span class="cast-captures-count" id="castCapturesCount">0</span>
               <div style="flex:1;"></div>
-              <button class="btn btn-ghost btn-sm" onclick="loadCastCaptures()" title="Load captures from localStorage">↻ Load</button>
+              <button class="btn btn-ghost btn-sm" onclick="loadCastCaptures()" title="Load captures and recordings">↻ Load</button>
             </div>
             <div id="castCapturesGrid" class="cast-captures-grid">
-              <div class="cast-cap-empty" id="castCapturesEmpty">No cast captures found. Captures taken in Cast Hub will appear here.</div>
+              <div class="cast-cap-empty" id="castCapturesEmpty">No cast captures found. Screenshots and video recordings from Cast Hub will appear here.</div>
             </div>
           </div>
         </div>
@@ -2461,66 +2485,162 @@ function generateShareCode() {
 
 // ── CAST CAPTURES VIEWER ──────────────────────────────────
 var CAST_CAPTURES_KEY = 'ip_cast_captures';
+var CAST_DB_NAME = 'ip_cast_db';
+var CAST_DB_VERSION = 1;
+var CAST_DB_STORE = 'recordings';
+var _castMergedItems = []; // merged timeline used by view/attach functions
+
+function openCastDB() {
+  return new Promise(function(resolve, reject) {
+    var request = indexedDB.open(CAST_DB_NAME, CAST_DB_VERSION);
+    request.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains(CAST_DB_STORE)) {
+        db.createObjectStore(CAST_DB_STORE, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = function(e) { resolve(e.target.result); };
+    request.onerror = function(e) { reject(e.target.error); };
+  });
+}
+
+function getAllRecordings() {
+  return openCastDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(CAST_DB_STORE, 'readonly');
+      var store = tx.objectStore(CAST_DB_STORE);
+      var request = store.getAll();
+      request.onsuccess = function() { resolve(request.result || []); };
+      request.onerror = function() { reject(request.error); };
+    });
+  });
+}
+
+function formatDuration(seconds) {
+  var s = Math.round(seconds || 0);
+  var m = Math.floor(s / 60);
+  var sec = s % 60;
+  return m + ':' + (sec < 10 ? '0' : '') + sec;
+}
 
 function loadCastCaptures() {
   var grid = document.getElementById('castCapturesGrid');
   var countEl = document.getElementById('castCapturesCount');
-  var emptyEl = document.getElementById('castCapturesEmpty');
   if (!grid) return;
 
-  var captures = [];
-  try { captures = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
+  // Load screenshots from localStorage
+  var screenshots = [];
+  try { screenshots = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
+  // Tag each screenshot
+  screenshots.forEach(function(s) { s._type = 'image'; });
 
-  if (countEl) countEl.textContent = captures.length;
+  // Load video recordings from IndexedDB (async)
+  getAllRecordings().then(function(recordings) {
+    // Tag each recording
+    recordings.forEach(function(r) { r._type = 'video'; });
+    return recordings;
+  }).catch(function() {
+    return []; // IndexedDB unavailable or empty
+  }).then(function(recordings) {
+    // Merge and sort by timestamp descending
+    var merged = screenshots.concat(recordings);
+    merged.sort(function(a, b) {
+      var ta = new Date(a.timestamp || 0).getTime();
+      var tb = new Date(b.timestamp || 0).getTime();
+      return tb - ta;
+    });
 
-  if (!captures.length) {
-    grid.innerHTML = '<div class="cast-cap-empty" id="castCapturesEmpty">No cast captures found. Captures taken in Cast Hub will appear here.</div>';
-    return;
-  }
+    // Store merged list for view/attach functions
+    _castMergedItems = merged;
 
-  var html = '';
-  captures.forEach(function(cap, idx) {
-    var ts = '';
-    try { ts = new Date(cap.timestamp).toLocaleString(); } catch(e) { ts = cap.timestamp || ''; }
-    var peerLabel = cap.peerName || cap.peerId || 'Unknown';
-    var roomLabel = cap.roomCode || '';
-    html += '<div class="cast-cap-thumb" onclick="viewCastCapture(' + idx + ')" title="Click to view full size">';
-    html += '<img src="' + (cap.imageData || '') + '" alt="Capture of ' + peerLabel + '">';
-    html += '<div class="cast-cap-thumb-info">';
-    html += '<div class="cast-cap-thumb-name">' + peerLabel + (roomLabel ? ' · ' + roomLabel : '') + '</div>';
-    html += '<div class="cast-cap-thumb-time">' + ts + '</div>';
-    html += '</div>';
-    html += '<div class="cast-cap-thumb-actions">';
-    html += '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); attachCaptureToPassport(' + idx + ')" title="Attach to passport">⬇ Attach</button>';
-    html += '</div>';
-    html += '</div>';
+    if (countEl) countEl.textContent = merged.length;
+
+    if (!merged.length) {
+      grid.innerHTML = '<div class="cast-cap-empty" id="castCapturesEmpty">No cast captures found. Screenshots and video recordings from Cast Hub will appear here.</div>';
+      return;
+    }
+
+    var html = '';
+    merged.forEach(function(cap, idx) {
+      var ts = '';
+      try { ts = new Date(cap.timestamp).toLocaleString(); } catch(e) { ts = cap.timestamp || ''; }
+      var peerLabel = cap.peerName || cap.peerId || 'Unknown';
+      var roomLabel = cap.roomCode || '';
+
+      if (cap._type === 'video') {
+        // Video thumbnail
+        html += '<div class="cast-cap-thumb cast-cap-thumb-video" onclick="viewCastCapture(' + idx + ')" title="Click to play video">';
+        html += '<div class="cast-cap-video-preview" style="width:100%;height:80px;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;">';
+        html += '<span style="font-size:0.6rem;color:var(--muted);letter-spacing:0.06em;">VIDEO</span>';
+        html += '</div>';
+        html += '<div class="cast-cap-play-overlay"><span>&#9654;</span></div>';
+        if (cap.duration) {
+          html += '<div class="cast-cap-duration-badge">' + formatDuration(cap.duration) + '</div>';
+        }
+        html += '<div class="cast-cap-thumb-info">';
+        html += '<div class="cast-cap-thumb-name">' + peerLabel + (roomLabel ? ' &middot; ' + roomLabel : '') + '</div>';
+        html += '<div class="cast-cap-thumb-time">' + ts + '</div>';
+        html += '</div>';
+        html += '<div class="cast-cap-thumb-actions">';
+        html += '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); attachCaptureToPassport(' + idx + ')" title="Attach to passport">&#11015; Attach</button>';
+        html += '</div>';
+        html += '</div>';
+      } else {
+        // Screenshot thumbnail (existing)
+        html += '<div class="cast-cap-thumb" onclick="viewCastCapture(' + idx + ')" title="Click to view full size">';
+        html += '<img src="' + (cap.imageData || '') + '" alt="Capture of ' + peerLabel + '">';
+        html += '<div class="cast-cap-thumb-info">';
+        html += '<div class="cast-cap-thumb-name">' + peerLabel + (roomLabel ? ' &middot; ' + roomLabel : '') + '</div>';
+        html += '<div class="cast-cap-thumb-time">' + ts + '</div>';
+        html += '</div>';
+        html += '<div class="cast-cap-thumb-actions">';
+        html += '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); attachCaptureToPassport(' + idx + ')" title="Attach to passport">&#11015; Attach</button>';
+        html += '</div>';
+        html += '</div>';
+      }
+    });
+    grid.innerHTML = html;
   });
-  grid.innerHTML = html;
 }
 
 function viewCastCapture(index) {
-  var captures = [];
-  try { captures = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
-  if (index < 0 || index >= captures.length) return;
-  var cap = captures[index];
-  if (!cap.imageData) return;
-  var win = window.open('');
-  if (win) {
-    var peerLabel = cap.peerName || cap.peerId || 'Capture';
-    win.document.title = 'Cast Capture — ' + peerLabel;
-    win.document.body.style.cssText = 'margin:0;background:#0D1B2A;display:flex;align-items:center;justify-content:center;min-height:100vh;';
-    var img = win.document.createElement('img');
-    img.src = cap.imageData;
-    img.style.cssText = 'max-width:95vw;max-height:95vh;border-radius:8px;box-shadow:0 0 40px rgba(123,47,190,0.4);';
-    win.document.body.appendChild(img);
+  if (index < 0 || index >= _castMergedItems.length) return;
+  var cap = _castMergedItems[index];
+
+  if (cap._type === 'video' && cap.blob) {
+    // Video: create blob URL and open in new tab
+    var blob = (cap.blob instanceof Blob) ? cap.blob : new Blob([cap.blob], { type: cap.mimeType || 'video/webm' });
+    var url = URL.createObjectURL(blob);
+    var win = window.open('');
+    if (win) {
+      var peerLabel = cap.peerName || cap.peerId || 'Recording';
+      win.document.title = 'Cast Recording — ' + peerLabel;
+      win.document.body.style.cssText = 'margin:0;background:#0D1B2A;display:flex;align-items:center;justify-content:center;min-height:100vh;';
+      var video = win.document.createElement('video');
+      video.src = url;
+      video.controls = true;
+      video.autoplay = true;
+      video.style.cssText = 'max-width:95vw;max-height:95vh;border-radius:8px;box-shadow:0 0 40px rgba(123,47,190,0.4);';
+      win.document.body.appendChild(video);
+    }
+  } else if (cap.imageData) {
+    // Screenshot: open image in new tab (existing behavior)
+    var win = window.open('');
+    if (win) {
+      var peerLabel = cap.peerName || cap.peerId || 'Capture';
+      win.document.title = 'Cast Capture — ' + peerLabel;
+      win.document.body.style.cssText = 'margin:0;background:#0D1B2A;display:flex;align-items:center;justify-content:center;min-height:100vh;';
+      var img = win.document.createElement('img');
+      img.src = cap.imageData;
+      img.style.cssText = 'max-width:95vw;max-height:95vh;border-radius:8px;box-shadow:0 0 40px rgba(123,47,190,0.4);';
+      win.document.body.appendChild(img);
+    }
   }
 }
 
 function attachCaptureToPassport(index) {
-  var captures = [];
-  try { captures = JSON.parse(localStorage.getItem(CAST_CAPTURES_KEY) || '[]'); } catch(e) {}
-  if (index < 0 || index >= captures.length) return;
-  var cap = captures[index];
+  if (index < 0 || index >= _castMergedItems.length) return;
+  var cap = _castMergedItems[index];
 
   state.immerse_captures = state.immerse_captures || [];
   // Avoid duplicates by id
@@ -2529,14 +2649,29 @@ function attachCaptureToPassport(index) {
     toast('Capture already attached to passport');
     return;
   }
-  state.immerse_captures.push({
-    id: cap.id,
-    roomCode: cap.roomCode,
-    peerName: cap.peerName,
-    peerId: cap.peerId,
-    timestamp: cap.timestamp,
-    imageData: cap.imageData,
-  });
+
+  if (cap._type === 'video') {
+    // Save reference only (video blob stays in IndexedDB)
+    state.immerse_captures.push({
+      id: cap.id,
+      type: 'video',
+      peerName: cap.peerName,
+      timestamp: cap.timestamp,
+      duration: cap.duration,
+      mimeType: cap.mimeType,
+    });
+  } else {
+    // Save image data (existing behavior, add type field)
+    state.immerse_captures.push({
+      id: cap.id,
+      type: 'image',
+      roomCode: cap.roomCode,
+      peerName: cap.peerName,
+      peerId: cap.peerId,
+      timestamp: cap.timestamp,
+      imageData: cap.imageData,
+    });
+  }
   autoSavePassport();
   toast('Capture attached to passport (' + state.immerse_captures.length + ' total)');
 }

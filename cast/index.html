@@ -441,11 +441,120 @@
     display: flex;
   }
 
-  .capture-lightbox img {
+  .capture-lightbox img,
+  .capture-lightbox video {
     max-width: 90%;
     max-height: 90%;
     border-radius: 8px;
     box-shadow: 0 0 40px rgba(123, 47, 190, 0.3);
+  }
+
+  /* Record button */
+  .feed-card-actions .record-btn {
+    font-size: 0.85rem;
+    cursor: pointer;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--ink-dim);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-1) var(--sp-2);
+    transition: all var(--transition-fast);
+  }
+
+  .feed-card-actions .record-btn:hover {
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.1);
+  }
+
+  .feed-card-actions .record-btn.recording {
+    color: #fff;
+    background: rgba(239, 68, 68, 0.85);
+    border-color: #ef4444;
+    animation: record-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes record-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Recording indicator overlay */
+  .recording-indicator {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    border-radius: 4px;
+    padding: 3px 8px;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .recording-indicator .rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: record-pulse 1.2s ease-in-out infinite;
+  }
+
+  .recording-indicator .rec-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #ef4444;
+    letter-spacing: 0.05em;
+  }
+
+  .recording-indicator .rec-time {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    color: #fca5a5;
+  }
+
+  /* Video recording thumbnail in gallery */
+  .capture-thumb video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    display: block;
+    background: var(--navy-3);
+  }
+
+  .capture-thumb .video-play-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    color: #fff;
+    font-size: 1rem;
+  }
+
+  .capture-thumb .rec-type-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.5rem;
+    background: rgba(239, 68, 68, 0.8);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 3px;
+    pointer-events: none;
   }
 
   /* Empty state */
@@ -784,19 +893,20 @@
   <!-- Captures gallery -->
   <div class="captures-section" id="captures-section" style="display:none">
     <div class="captures-header">
-      <h3>Session Captures <span class="capture-count-badge" id="capture-count">0</span></h3>
+      <h3>Session Captures &amp; Recordings <span class="capture-count-badge" id="capture-count">0</span></h3>
       <div style="display:flex;gap:var(--sp-2)">
-        <button class="btn btn-ghost btn-sm" id="clear-captures-btn" title="Clear all captures">Clear All</button>
+        <button class="btn btn-ghost btn-sm" id="clear-captures-btn" title="Clear all captures &amp; recordings">Clear All</button>
       </div>
     </div>
     <div class="captures-grid" id="captures-grid">
-      <div class="captures-empty" id="captures-empty">No captures yet — use the camera button on any feed to take a screenshot</div>
+      <div class="captures-empty" id="captures-empty">No captures yet — use the camera button on any feed to take a screenshot or the record button to capture video</div>
     </div>
   </div>
 
   <!-- Lightbox overlay -->
   <div class="capture-lightbox" id="capture-lightbox">
-    <img id="lightbox-img" src="" alt="Capture" />
+    <img id="lightbox-img" src="" alt="Capture" style="display:none" />
+    <video id="lightbox-video" controls autoplay style="display:none"></video>
   </div>
 
   <!-- How to cast -->
@@ -1170,6 +1280,7 @@ function addFeedCard(peerId, name, stream, mediaConn) {
     </div>
     <div class="feed-card-actions">
       <button class="capture-btn" title="Capture screenshot">&#x1F4F7;</button>
+      <button class="record-btn" title="Record video">&#x23FA;</button>
       <button class="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
       <button class="disconnect-btn" title="Disconnect">&#x2715;</button>
     </div>
@@ -1193,14 +1304,99 @@ function addFeedCard(peerId, name, stream, mediaConn) {
     captureFrame(video, name, peerId);
   });
 
+  // Record video
+  const recordBtn = bar.querySelector('.record-btn');
+  let recorder = null;
+  let recordChunks = [];
+  let recordStartTime = null;
+  let recordTimerInterval = null;
+  let recordingIndicator = null;
+
+  function startRecording() {
+    recordChunks = [];
+    let mimeType = 'video/webm;codecs=vp8,opus';
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      mimeType = 'video/webm';
+    }
+    try {
+      recorder = new MediaRecorder(stream, { mimeType });
+    } catch (e) {
+      console.error('MediaRecorder failed:', e);
+      return;
+    }
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) recordChunks.push(e.data);
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(recordChunks, { type: recorder.mimeType || 'video/webm' });
+      const duration = recordStartTime ? ((Date.now() - recordStartTime) / 1000) : 0;
+      const roomCode = sessionStorage.getItem('ip_cast_room_code') || '';
+      const record = {
+        id: crypto.randomUUID(),
+        roomCode,
+        peerName: name || 'Unknown',
+        peerId: peerId || '',
+        timestamp: new Date().toISOString(),
+        duration: Math.round(duration),
+        blob,
+        mimeType: recorder.mimeType || 'video/webm',
+      };
+      saveRecording(record).then(() => renderCapturesAndRecordings());
+      cleanupRecordingUI();
+    };
+
+    recorder.start(1000);
+    recordStartTime = Date.now();
+    recordBtn.classList.add('recording');
+
+    // Add recording indicator overlay
+    recordingIndicator = document.createElement('div');
+    recordingIndicator.className = 'recording-indicator';
+    recordingIndicator.innerHTML = '<span class="rec-dot"></span><span class="rec-label">REC</span><span class="rec-time">0:00</span>';
+    card.appendChild(recordingIndicator);
+
+    const timeSpan = recordingIndicator.querySelector('.rec-time');
+    recordTimerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      timeSpan.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }, 500);
+  }
+
+  function stopRecording() {
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();
+    }
+  }
+
+  function cleanupRecordingUI() {
+    recordBtn.classList.remove('recording');
+    if (recordTimerInterval) { clearInterval(recordTimerInterval); recordTimerInterval = null; }
+    if (recordingIndicator && recordingIndicator.parentNode) { recordingIndicator.remove(); recordingIndicator = null; }
+    recorder = null;
+    recordStartTime = null;
+  }
+
+  recordBtn.addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  });
+
   // Disconnect
   bar.querySelector('.disconnect-btn').addEventListener('click', () => {
+    if (recorder && recorder.state === 'recording') stopRecording();
     mediaConn.close();
     removeFeedCard(peerId);
   });
 
   // Track the peer
-  activePeers.set(peerId, { mediaConn, stream, name, element: card });
+  activePeers.set(peerId, { mediaConn, stream, name, element: card, stopRecording: () => { if (recorder && recorder.state === 'recording') stopRecording(); } });
   setPeerCount(activePeers.size);
 
   // Monitor stream end
@@ -1214,6 +1410,8 @@ function addFeedCard(peerId, name, stream, mediaConn) {
 function removeFeedCard(peerId) {
   const peerInfo = activePeers.get(peerId);
   if (peerInfo) {
+    // Stop any active recording
+    if (peerInfo.stopRecording) peerInfo.stopRecording();
     // Stop tracks
     if (peerInfo.stream) {
       peerInfo.stream.getTracks().forEach(t => t.stop());
@@ -1287,88 +1485,247 @@ function captureFrame(videoEl, peerName, peerId) {
     setTimeout(() => flash.remove(), 400);
   }
 
-  renderCaptures();
+  renderCapturesAndRecordings();
 }
 
-function renderCaptures() {
+/* ================================================================
+   IndexedDB STORAGE LAYER — Video recordings
+   ================================================================ */
+
+function openCastDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('ip_cast_db', 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('recordings')) {
+        db.createObjectStore('recordings', { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+function saveRecording(record) {
+  return openCastDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('recordings', 'readwrite');
+      tx.objectStore('recordings').put(record);
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  });
+}
+
+function getAllRecordings() {
+  return openCastDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('recordings', 'readonly');
+      const store = tx.objectStore('recordings');
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const results = request.result || [];
+        results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        resolve(results);
+      };
+      request.onerror = (e) => reject(e.target.error);
+    });
+  });
+}
+
+function deleteRecording(id) {
+  return openCastDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('recordings', 'readwrite');
+      tx.objectStore('recordings').delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  });
+}
+
+function clearAllRecordings() {
+  return openCastDB().then(db => {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('recordings', 'readwrite');
+      tx.objectStore('recordings').clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  });
+}
+
+/* ================================================================
+   COMBINED GALLERY — Screenshots + Video Recordings
+   ================================================================ */
+
+function renderCapturesAndRecordings() {
   const section = document.getElementById('captures-section');
   const grid = document.getElementById('captures-grid');
   const empty = document.getElementById('captures-empty');
   const badge = document.getElementById('capture-count');
   if (!section || !grid) return;
 
-  const captures = getCapturesFromStorage();
+  const captures = getCapturesFromStorage().map(c => ({ ...c, _type: 'screenshot' }));
 
-  if (captures.length === 0) {
-    section.style.display = 'none';
-    return;
-  }
+  getAllRecordings().then(recordings => {
+    const recs = recordings.map(r => ({ ...r, _type: 'recording' }));
+    const merged = [...captures, ...recs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-  section.style.display = '';
-  badge.textContent = captures.length;
-  if (empty) empty.style.display = 'none';
+    const total = merged.length;
+    if (total === 0) {
+      section.style.display = 'none';
+      return;
+    }
 
-  grid.innerHTML = '';
-  captures.forEach((cap, i) => {
-    const thumb = document.createElement('div');
-    thumb.className = 'capture-thumb';
+    section.style.display = '';
+    badge.textContent = total;
+    if (empty) empty.style.display = 'none';
 
-    const time = new Date(cap.timestamp);
-    const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    grid.innerHTML = '';
+    merged.forEach(item => {
+      const thumb = document.createElement('div');
+      thumb.className = 'capture-thumb';
 
-    thumb.innerHTML = `
-      <img src="${cap.imageData}" alt="Capture from ${escapeHtml(cap.peerName)}" loading="lazy" />
-      <div class="capture-thumb-info">
-        <span class="capture-thumb-name">${escapeHtml(cap.peerName)}</span>
-        <span class="capture-thumb-time">${timeStr}</span>
-      </div>
-      <button class="capture-thumb-delete" data-idx="${i}" title="Delete capture">&times;</button>
-    `;
+      const time = new Date(item.timestamp);
+      const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    thumb.querySelector('img').addEventListener('click', () => openLightbox(cap.imageData));
-    thumb.querySelector('.capture-thumb-delete').addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteCapture(i);
+      if (item._type === 'screenshot') {
+        thumb.innerHTML = `
+          <img src="${item.imageData}" alt="Capture from ${escapeHtml(item.peerName)}" loading="lazy" />
+          <div class="capture-thumb-info">
+            <span class="capture-thumb-name">${escapeHtml(item.peerName)}</span>
+            <span class="capture-thumb-time">${timeStr}</span>
+          </div>
+          <button class="capture-thumb-delete" title="Delete capture">&times;</button>
+        `;
+        thumb.querySelector('img').addEventListener('click', () => openLightbox(item.imageData, 'image'));
+        thumb.querySelector('.capture-thumb-delete').addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteCaptureById(item.id);
+        });
+      } else {
+        // Video recording
+        const blobUrl = URL.createObjectURL(item.blob);
+        const durationStr = item.duration ? `${Math.floor(item.duration / 60)}:${(item.duration % 60).toString().padStart(2, '0')}` : '';
+
+        thumb.innerHTML = `
+          <video src="${blobUrl}" preload="metadata" muted></video>
+          <span class="rec-type-badge">REC</span>
+          <div class="video-play-overlay">&#9654;</div>
+          <div class="capture-thumb-info">
+            <span class="capture-thumb-name">${escapeHtml(item.peerName)}${durationStr ? ' (' + durationStr + ')' : ''}</span>
+            <span class="capture-thumb-time">${timeStr}</span>
+          </div>
+          <button class="capture-thumb-delete" title="Delete recording">&times;</button>
+        `;
+
+        // Generate poster from first frame
+        const thumbVideo = thumb.querySelector('video');
+        thumbVideo.addEventListener('loadeddata', () => {
+          thumbVideo.currentTime = 0.1;
+        });
+
+        thumb.querySelector('.video-play-overlay').parentElement.addEventListener('click', (e) => {
+          if (e.target.closest('.capture-thumb-delete')) return;
+          openLightbox(blobUrl, 'video');
+        });
+        thumb.querySelector('.capture-thumb-delete').addEventListener('click', (e) => {
+          e.stopPropagation();
+          URL.revokeObjectURL(blobUrl);
+          deleteRecording(item.id).then(() => renderCapturesAndRecordings());
+        });
+      }
+
+      grid.appendChild(thumb);
     });
-
-    grid.appendChild(thumb);
+  }).catch(err => {
+    console.error('Failed to load recordings:', err);
+    // Fall back to screenshots only
+    if (captures.length === 0) { section.style.display = 'none'; return; }
+    section.style.display = '';
+    badge.textContent = captures.length;
+    if (empty) empty.style.display = 'none';
+    grid.innerHTML = '';
+    captures.forEach(cap => {
+      const thumb = document.createElement('div');
+      thumb.className = 'capture-thumb';
+      const time = new Date(cap.timestamp);
+      const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      thumb.innerHTML = `
+        <img src="${cap.imageData}" alt="Capture from ${escapeHtml(cap.peerName)}" loading="lazy" />
+        <div class="capture-thumb-info">
+          <span class="capture-thumb-name">${escapeHtml(cap.peerName)}</span>
+          <span class="capture-thumb-time">${timeStr}</span>
+        </div>
+        <button class="capture-thumb-delete" title="Delete capture">&times;</button>
+      `;
+      thumb.querySelector('img').addEventListener('click', () => openLightbox(cap.imageData, 'image'));
+      thumb.querySelector('.capture-thumb-delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteCaptureById(cap.id);
+      });
+      grid.appendChild(thumb);
+    });
   });
 }
 
-function deleteCapture(index) {
+function deleteCaptureById(id) {
   const captures = getCapturesFromStorage();
-  captures.splice(index, 1);
-  localStorage.setItem(CAST_CAPTURES_KEY, JSON.stringify(captures));
-  renderCaptures();
+  const idx = captures.findIndex(c => c.id === id);
+  if (idx !== -1) {
+    captures.splice(idx, 1);
+    localStorage.setItem(CAST_CAPTURES_KEY, JSON.stringify(captures));
+  }
+  renderCapturesAndRecordings();
 }
 
-function openLightbox(src) {
+function openLightbox(src, type) {
   const lb = document.getElementById('capture-lightbox');
   const img = document.getElementById('lightbox-img');
-  if (lb && img) {
-    img.src = src;
-    lb.classList.add('open');
+  const vid = document.getElementById('lightbox-video');
+  if (!lb) return;
+
+  if (type === 'video') {
+    if (img) img.style.display = 'none';
+    if (vid) {
+      vid.src = src;
+      vid.style.display = '';
+    }
+  } else {
+    if (vid) { vid.pause(); vid.src = ''; vid.style.display = 'none'; }
+    if (img) {
+      img.src = src;
+      img.style.display = '';
+    }
   }
+  lb.classList.add('open');
 }
 
 // Wire gallery controls
 (function wireCaptureControls() {
   const lb = document.getElementById('capture-lightbox');
   if (lb) {
-    lb.addEventListener('click', () => lb.classList.remove('open'));
+    lb.addEventListener('click', () => {
+      lb.classList.remove('open');
+      const vid = document.getElementById('lightbox-video');
+      if (vid) { vid.pause(); vid.src = ''; vid.style.display = 'none'; }
+      const img = document.getElementById('lightbox-img');
+      if (img) { img.src = ''; img.style.display = 'none'; }
+    });
   }
 
   const clearBtn = document.getElementById('clear-captures-btn');
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
-      if (confirm('Delete all captures from this session?')) {
+      if (confirm('Delete all captures and recordings from this session?')) {
         localStorage.removeItem(CAST_CAPTURES_KEY);
-        renderCaptures();
+        clearAllRecordings().then(() => renderCapturesAndRecordings()).catch(() => renderCapturesAndRecordings());
       }
     });
   }
 
-  renderCaptures();
+  renderCapturesAndRecordings();
 })();
 
 /* ================================================================
