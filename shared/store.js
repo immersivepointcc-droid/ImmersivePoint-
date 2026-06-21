@@ -89,6 +89,9 @@ const ls = {
   interactions:   new LocalStore('ip_interactions'),
   vendors:        new LocalStore('ip_vendors'),
   deals:          new LocalStore('ip_deals'),
+  mobileDevices:      new LocalStore('ip_mobile_devices'),
+  mobileDeployments:  new LocalStore('ip_mobile_deployments'),
+  mobileMaintenance:  new LocalStore('ip_mobile_maintenance'),
 };
 
 /* Google Sheets key mapping (entity -> sheet tab name) */
@@ -98,6 +101,9 @@ const gsKey = {
   contacts:       'contacts',
   orgs:           'organizations',
   deals:          'deals',
+  mobileDevices:      'mobileDevices',
+  mobileDeployments:  'mobileDeployments',
+  mobileMaintenance:  'mobileMaintenance',
 };
 
 /** Fire-and-forget: sync a record to Google Sheets if configured. */
@@ -463,16 +469,86 @@ export async function deleteDeal(id) {
 
 
 /* ================================================================
+   Mobile Ops — Devices
+   ================================================================ */
+
+export function getDevices() {
+  return JSON.parse(localStorage.getItem('ip_mobile_devices') || '[]');
+}
+export function saveDevice(device) {
+  const devices = getDevices();
+  device.updated_at = new Date().toISOString();
+  const idx = devices.findIndex(d => d.id === device.id);
+  if (idx >= 0) { devices[idx] = { ...devices[idx], ...device }; }
+  else { device.id = device.id || crypto.randomUUID(); device.created_at = new Date().toISOString(); devices.unshift(device); }
+  localStorage.setItem('ip_mobile_devices', JSON.stringify(devices));
+  _gsSave('mobileDevices', device);
+  return device;
+}
+export function deleteDevice(id) {
+  const devices = getDevices().filter(d => d.id !== id);
+  localStorage.setItem('ip_mobile_devices', JSON.stringify(devices));
+}
+
+/* ================================================================
+   Mobile Ops — Deployments
+   ================================================================ */
+
+export function getDeployments() {
+  return JSON.parse(localStorage.getItem('ip_mobile_deployments') || '[]');
+}
+export function saveDeployment(dep) {
+  const deps = getDeployments();
+  dep.updated_at = new Date().toISOString();
+  const idx = deps.findIndex(d => d.id === dep.id);
+  if (idx >= 0) { deps[idx] = { ...deps[idx], ...dep }; }
+  else { dep.id = dep.id || crypto.randomUUID(); dep.created_at = new Date().toISOString(); deps.unshift(dep); }
+  localStorage.setItem('ip_mobile_deployments', JSON.stringify(deps));
+  _gsSave('mobileDeployments', dep);
+  return dep;
+}
+export function deleteDeployment(id) {
+  const deps = getDeployments().filter(d => d.id !== id);
+  localStorage.setItem('ip_mobile_deployments', JSON.stringify(deps));
+}
+
+/* ================================================================
+   Mobile Ops — Maintenance Log
+   ================================================================ */
+
+export function getMaintenanceLogs() {
+  return JSON.parse(localStorage.getItem('ip_mobile_maintenance') || '[]');
+}
+export function saveMaintenanceLog(log) {
+  const logs = getMaintenanceLogs();
+  log.updated_at = new Date().toISOString();
+  const idx = logs.findIndex(l => l.id === log.id);
+  if (idx >= 0) { logs[idx] = { ...logs[idx], ...log }; }
+  else { log.id = log.id || crypto.randomUUID(); log.created_at = new Date().toISOString(); logs.unshift(log); }
+  localStorage.setItem('ip_mobile_maintenance', JSON.stringify(logs));
+  _gsSave('mobileMaintenance', log);
+  return log;
+}
+export function deleteMaintenanceLog(id) {
+  const logs = getMaintenanceLogs().filter(l => l.id !== id);
+  localStorage.setItem('ip_mobile_maintenance', JSON.stringify(logs));
+}
+
+
+/* ================================================================
    Google Sheets — Bulk Sync
    ================================================================ */
 
 /** Map of localStorage entity key -> Google Sheets tab name (only entities with a sheet). */
 const _syncMap = {
-  sparkSessions: 'sparkSessions',
-  passports:     'passports',
-  contacts:      'contacts',
-  orgs:          'organizations',
-  deals:         'deals',
+  sparkSessions:      'sparkSessions',
+  passports:          'passports',
+  contacts:           'contacts',
+  orgs:               'organizations',
+  deals:              'deals',
+  mobileDevices:      'mobileDevices',
+  mobileDeployments:  'mobileDeployments',
+  mobileMaintenance:  'mobileMaintenance',
 };
 
 /**

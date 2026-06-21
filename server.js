@@ -32,6 +32,7 @@ const SPA_ROUTES = [
   '/passport/',
   '/crm/',
   '/vendors/',
+  '/mobile-ops/',
   '/cast/',
   '/j/',
 ];
