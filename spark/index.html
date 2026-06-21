@@ -1144,7 +1144,7 @@ var ARCHETYPES = {
 };
 
 /* ---------- 14 EASTERN KENTUCKY CAREER PATHWAYS ---------- */
-var CAREERS = [
+var DEFAULT_CAREERS = [
   {name:"Registered Nurse (RN)",codes:["SI","IS","SC","SR"],pay:"$58-78K",region:"UK King's Daughters (Ashland) · St. Claire (Morehead) · regional clinics",why:"Direct human impact, steady demand, pathway from CNA → LPN → RN. ACTC and Morehead State offer in-region programs.",train:"2-year ADN (ACTC) or 4-year BSN (Morehead/Marshall)",growth:"12% (much faster than avg)",vxr:"Nursing Assistant Career Experience — 19 hands-on simulations · Cadaver Lab Anatomy (explore every body system) · 50+ AI patient profile scenarios · Patient vitals + mobility assistance"},
   {name:"Industrial Electrician",codes:["RC","RI","CR","RE"],pay:"$55-82K",region:"Regional manufacturing · Toyota (Georgetown/WV) · Marathon (Catlettsburg) · industrial contractors",why:"High-demand trade, strong wages, manufacturers actively recruiting. Union apprenticeships pay while you learn.",train:"IBEW apprenticeship (4-5 yr paid) or ACTC electrical tech AAS",growth:"6% + high replacement demand",vxr:"Trades Career Experience — 15 hands-on simulations · OSHA Warehouse Safety · Electrical Systems sandbox · NCCER PACT Core certification prep"},
   {name:"Welder / Fabricator",codes:["RA","RC","RI","AR"],pay:"$48-72K",region:"Regional fabrication shops · ship/rail/auto suppliers · construction trades",why:"Eastern KY has deep welding heritage; certified welders command premium pay. AWS certification unlocks national mobility.",train:"CCTC welding · ACTC welding tech · Career Experience available at ImmersivePoint",growth:"8%",vxr:"Welding Career Experience — MIG, TIG, stick simulations · Fire Extinguisher Safety · Paired with Mimbus welding simulator at ImmersivePoint for dual coverage"},
@@ -1160,6 +1160,8 @@ var CAREERS = [
   {name:"Operations / Office Manager",codes:["CE","EC","CS"],pay:"$44-68K",region:"Hospitals · schools · plants · small biz",why:"Organized people who can run things are rare and valuable. Entry via AA business or internal promotion.",train:"ACTC business admin AAS + on-the-job",growth:"5%",vxr:"Operations Career Experience — Supply Chain simulation · OSHA Warehouse Safety · AI scenario practice (conflict resolution, team negotiation) · Executive Conference Room environments"},
   {name:"XR / Immersive Tech Specialist",codes:["IA","AR","IC"],pay:"$55-95K",region:"ImmersivePoint · remote · emerging regional",why:"Emerging field. Eastern KY has ImmersivePoint — rare in rural America. Get in early, build the region's XR capacity.",train:"ImmersivePoint FutureForge XR · Morehead CS + design",growth:"Emerging (23%+)",vxr:"XR Builder Career Experience — Build-to-Learn Studio (create custom AI-instructed experiences) · 3D AI Teaching Assistant creator · Full Career Experience catalog access · Digital Twin development practice"}
 ];
+
+var CAREERS = DEFAULT_CAREERS.slice();
 
 /* ---------- STATE ---------- */
 var state = {
@@ -1674,6 +1676,45 @@ function resetIdle(){
   document.addEventListener(ev,resetIdle,{passive:true});
 });
 resetIdle();
+
+/* ---------- LOAD CAREERS FROM GOOGLE SHEETS (non-blocking) ---------- */
+(function(){
+  var scriptUrl = localStorage.getItem('ip_google_script_url');
+  if(!scriptUrl) return;
+  fetch(scriptUrl + '?action=read&sheet=careers')
+    .then(function(res){ return res.json(); })
+    .then(function(rows){
+      if(!Array.isArray(rows) || rows.length === 0) return;
+      var mapped = [];
+      for(var i = 0; i < rows.length; i++){
+        var r = rows[i];
+        if(!r.active && r.active !== undefined) continue;
+        if(r.active === '' || r.active === false || r.active === 'false' || r.active === 0 || r.active === '0') continue;
+        var codes = r.codes;
+        if(typeof codes === 'string'){
+          try{ codes = JSON.parse(codes); }catch(e){ codes = []; }
+        }
+        mapped.push({
+          name:   r.name   || '',
+          codes:  codes    || [],
+          pay:    r.pay    || '',
+          region: r.region || '',
+          why:    r.why    || '',
+          train:  r.train  || '',
+          growth: r.growth || '',
+          vxr:    r.vxr    || ''
+        });
+      }
+      if(mapped.length > 0){
+        CAREERS.length = 0;
+        for(var j = 0; j < mapped.length; j++) CAREERS.push(mapped[j]);
+        console.log('[Spark] Loaded ' + mapped.length + ' careers from Google Sheets');
+      }
+    })
+    .catch(function(err){
+      console.log('[Spark] Google Sheets career fetch failed, using defaults:', err);
+    });
+})();
 </script>
 </body>
 </html>

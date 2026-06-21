@@ -540,6 +540,7 @@ import {
   getInteractions
 } from '/shared/store.js';
 import { seedFromHubSpot } from '/shared/seed.js';
+import { googleSync } from '/shared/google-sync.js';
 
 /* ================================================================
    Boot
@@ -587,6 +588,9 @@ async function boot() {
     user, userName, role,
     sessions, passports, contacts, orgs, vendors, interactions
   });
+
+  // Wire up settings panel event listeners (admin/facilitator only)
+  wireSettingsListeners();
 }
 
 /* ================================================================
@@ -678,6 +682,11 @@ function buildDashboard(ctx) {
 
   // ---- Recent activity (all roles) ----
   html += buildRecentActivity(ctx);
+
+  // ---- Settings (admin & facilitator) ----
+  if (role === 'admin' || role === 'facilitator') {
+    html += buildSettingsSection();
+  }
 
   return html;
 }
@@ -1012,6 +1021,191 @@ function buildRecentActivity({ sessions, interactions, passports }) {
         ${feedHtml}
       </div>
     </div>`;
+}
+
+/* ================================================================
+   Settings Section (admin / facilitator)
+   ================================================================ */
+
+function buildSettingsSection() {
+  const savedUrl = googleSync.getScriptUrl();
+
+  return `
+    <div class="section-header mt-6">
+      <h3>Settings</h3>
+    </div>
+    <div class="card mb-6">
+      <div class="card-header">
+        <span class="card-title">Google Sheets Integration</span>
+        <span id="gs-status-badge" class="badge ${savedUrl ? 'badge-cyan' : 'badge-purple'}">${savedUrl ? 'Configured' : 'Not Connected'}</span>
+      </div>
+      <div class="card-body">
+        <p style="font-size:0.875rem;color:var(--ink-dim);margin-bottom:var(--sp-4);">
+          Connect to Google Sheets to store and sync platform data. Your career database, Spark sessions, passports, and CRM data will sync automatically.
+        </p>
+
+        <!-- URL input -->
+        <div style="display:flex;gap:var(--sp-2);margin-bottom:var(--sp-4);flex-wrap:wrap;">
+          <input
+            id="gs-url-input"
+            type="url"
+            class="input"
+            placeholder="https://script.google.com/macros/s/.../exec"
+            value="${escHtml(savedUrl)}"
+            style="flex:1;min-width:260px;"
+          />
+          <button id="gs-save-btn" class="btn btn-primary" type="button">Save</button>
+          <button id="gs-test-btn" class="btn btn-ghost" type="button">Test Connection</button>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-bottom:var(--sp-4);">
+          <button id="gs-sync-btn" class="btn btn-ghost" type="button">Sync Now</button>
+          <button id="gs-seed-btn" class="btn btn-ghost" type="button">Seed Careers</button>
+        </div>
+
+        <!-- Status indicator -->
+        <div id="gs-status" style="display:none;padding:var(--sp-3);border-radius:var(--radius-sm);font-size:0.85rem;font-family:var(--font-mono);margin-bottom:var(--sp-4);"></div>
+
+        <!-- Setup instructions (collapsible) -->
+        <details style="border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;">
+          <summary style="padding:var(--sp-3) var(--sp-4);cursor:pointer;font-size:0.875rem;font-weight:600;color:var(--ink);background:var(--surface-2);user-select:none;">
+            Setup Instructions
+          </summary>
+          <div style="padding:var(--sp-4);font-size:0.85rem;color:var(--ink-dim);line-height:1.7;">
+            <ol style="padding-left:var(--sp-5);margin:0;">
+              <li style="margin-bottom:var(--sp-2);">Create a new <strong>Google Sheet</strong> in your Google Drive.</li>
+              <li style="margin-bottom:var(--sp-2);">Open <strong>Extensions &rarr; Apps Script</strong> from the sheet menu bar.</li>
+              <li style="margin-bottom:var(--sp-2);">Replace the default code with the contents of <code style="background:var(--surface-3);padding:2px 6px;border-radius:4px;">google-apps-script/Code.gs</code> from this repository.</li>
+              <li style="margin-bottom:var(--sp-2);">Click <strong>Deploy &rarr; New Deployment &rarr; Web App</strong>. Set <em>Execute as: Me</em> and <em>Who has access: Anyone</em>.</li>
+              <li>Copy the deployment URL and paste it into the field above, then click <strong>Save</strong>.</li>
+            </ol>
+          </div>
+        </details>
+      </div>
+    </div>`;
+}
+
+/* ================================================================
+   Settings Event Wiring
+   ================================================================ */
+
+function wireSettingsListeners() {
+  const urlInput   = document.getElementById('gs-url-input');
+  const saveBtn    = document.getElementById('gs-save-btn');
+  const testBtn    = document.getElementById('gs-test-btn');
+  const syncBtn    = document.getElementById('gs-sync-btn');
+  const seedBtn    = document.getElementById('gs-seed-btn');
+  const statusEl   = document.getElementById('gs-status');
+  const badgeEl    = document.getElementById('gs-status-badge');
+
+  if (!saveBtn) return; // section not rendered (wrong role)
+
+  function showStatus(msg, type) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = msg;
+    if (type === 'success') {
+      statusEl.style.background = 'rgba(34,197,94,0.1)';
+      statusEl.style.color = 'var(--success)';
+      statusEl.style.border = '1px solid rgba(34,197,94,0.25)';
+    } else if (type === 'error') {
+      statusEl.style.background = 'rgba(239,68,68,0.1)';
+      statusEl.style.color = 'var(--danger)';
+      statusEl.style.border = '1px solid rgba(239,68,68,0.25)';
+    } else {
+      statusEl.style.background = 'rgba(0,180,216,0.08)';
+      statusEl.style.color = 'var(--cyan)';
+      statusEl.style.border = '1px solid rgba(0,180,216,0.2)';
+    }
+  }
+
+  function setBadge(connected) {
+    if (badgeEl) {
+      badgeEl.textContent = connected ? 'Connected' : 'Not Connected';
+      badgeEl.className = 'badge ' + (connected ? 'badge-cyan' : 'badge-purple');
+    }
+  }
+
+  // Save
+  saveBtn.addEventListener('click', () => {
+    const url = urlInput.value.trim();
+    googleSync.setScriptUrl(url);
+    if (url) {
+      showStatus('URL saved to localStorage.', 'success');
+      setBadge(true);
+    } else {
+      showStatus('URL cleared.', 'info');
+      setBadge(false);
+    }
+  });
+
+  // Test Connection
+  testBtn.addEventListener('click', async () => {
+    const url = urlInput.value.trim();
+    if (!url) { showStatus('Enter a URL first.', 'error'); return; }
+    // Temporarily set URL for testing even if not saved
+    googleSync.setScriptUrl(url);
+    showStatus('Testing connection...', 'info');
+    testBtn.disabled = true;
+    try {
+      const result = await googleSync.ping();
+      if (!result.error) {
+        showStatus('Connection successful!', 'success');
+        setBadge(true);
+      } else {
+        showStatus('Connection failed: ' + (result.error?.message || result.error || 'Unknown error'), 'error');
+        setBadge(false);
+      }
+    } catch (err) {
+      showStatus('Connection failed: ' + err.message, 'error');
+      setBadge(false);
+    } finally {
+      testBtn.disabled = false;
+    }
+  });
+
+  // Sync Now
+  syncBtn.addEventListener('click', async () => {
+    const url = googleSync.getScriptUrl();
+    if (!url) { showStatus('Save a URL first before syncing.', 'error'); return; }
+    showStatus('Syncing all data...', 'info');
+    syncBtn.disabled = true;
+    try {
+      const res = await fetch(`${url}?action=sync_all`);
+      const json = await res.json();
+      if (json.error) {
+        showStatus('Sync failed: ' + (json.error.message || json.error), 'error');
+      } else {
+        showStatus('Full sync completed successfully!', 'success');
+      }
+    } catch (err) {
+      showStatus('Sync failed: ' + err.message, 'error');
+    } finally {
+      syncBtn.disabled = false;
+    }
+  });
+
+  // Seed Careers
+  seedBtn.addEventListener('click', async () => {
+    const url = googleSync.getScriptUrl();
+    if (!url) { showStatus('Save a URL first before seeding.', 'error'); return; }
+    showStatus('Seeding career data...', 'info');
+    seedBtn.disabled = true;
+    try {
+      const res = await fetch(`${url}?action=seed_careers`);
+      const json = await res.json();
+      if (json.error) {
+        showStatus('Seeding failed: ' + (json.error.message || json.error), 'error');
+      } else {
+        const count = json.data?.count || json.count || '';
+        showStatus('Careers seeded successfully!' + (count ? ` (${count} records)` : ''), 'success');
+      }
+    } catch (err) {
+      showStatus('Seeding failed: ' + err.message, 'error');
+    } finally {
+      seedBtn.disabled = false;
+    }
+  });
 }
 
 /* ================================================================

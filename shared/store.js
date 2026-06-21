@@ -6,6 +6,7 @@
  */
 
 import { supabase, isConfigured } from './supabase.js';
+import { googleSync } from './google-sync.js';
 
 /* ================================================================
    Helpers
@@ -90,6 +91,23 @@ const ls = {
   deals:          new LocalStore('ip_deals'),
 };
 
+/* Google Sheets key mapping (entity -> sheet tab name) */
+const gsKey = {
+  sparkSessions:  'sparkSessions',
+  passports:      'passports',
+  contacts:       'contacts',
+  orgs:           'organizations',
+  deals:          'deals',
+};
+
+/** Fire-and-forget: sync a record to Google Sheets if configured. */
+function _gsSave(entityKey, record) {
+  const sheetKey = gsKey[entityKey];
+  if (sheetKey && googleSync.isConfigured()) {
+    googleSync.save(sheetKey, record).catch(() => {});
+  }
+}
+
 
 /* ================================================================
    Spark Sessions
@@ -106,7 +124,9 @@ export async function saveSparkSession(data) {
       .single();
     return { data: row, error };
   }
-  return ls.sparkSessions.upsert({ ...data });
+  const result = ls.sparkSessions.upsert({ ...data });
+  _gsSave('sparkSessions', result.data);
+  return result;
 }
 
 export async function getSparkSessions(userId) {
@@ -150,7 +170,9 @@ export async function savePassport(data) {
   }
   const record = { ...data };
   if (!record.share_code) record.share_code = _generateShareCode();
-  return ls.passports.upsert(record);
+  const result = ls.passports.upsert(record);
+  _gsSave('passports', result.data);
+  return result;
 }
 
 export async function getPassports(userId) {
@@ -204,7 +226,9 @@ export async function saveContact(data) {
       .single();
     return { data: row, error };
   }
-  return ls.contacts.upsert({ ...data });
+  const result = ls.contacts.upsert({ ...data });
+  _gsSave('contacts', result.data);
+  return result;
 }
 
 export async function getContacts(filters) {
@@ -266,7 +290,9 @@ export async function saveOrg(data) {
       .single();
     return { data: row, error };
   }
-  return ls.orgs.upsert({ ...data });
+  const result = ls.orgs.upsert({ ...data });
+  _gsSave('orgs', result.data);
+  return result;
 }
 
 export async function getOrgs() {
@@ -301,7 +327,9 @@ export async function saveInteraction(data) {
       .single();
     return { data: row, error };
   }
-  return ls.interactions.upsert({ ...data });
+  const result = ls.interactions.upsert({ ...data });
+  _gsSave('interactions', result.data);
+  return result;
 }
 
 export async function getInteractions(contactId) {
@@ -330,7 +358,9 @@ export async function saveVendor(data) {
       .single();
     return { data: row, error };
   }
-  return ls.vendors.upsert({ ...data });
+  const result = ls.vendors.upsert({ ...data });
+  _gsSave('vendors', result.data);
+  return result;
 }
 
 export async function getVendors() {
@@ -382,7 +412,9 @@ export async function saveDeal(data) {
       .single();
     return { data: row, error };
   }
-  return ls.deals.upsert({ ...data });
+  const result = ls.deals.upsert({ ...data });
+  _gsSave('deals', result.data);
+  return result;
 }
 
 export async function getDeals(filters) {
@@ -427,4 +459,83 @@ export async function deleteDeal(id) {
     return { data, error };
   }
   return ls.deals.remove(id);
+}
+
+
+/* ================================================================
+   Google Sheets — Bulk Sync
+   ================================================================ */
+
+/** Map of localStorage entity key -> Google Sheets tab name (only entities with a sheet). */
+const _syncMap = {
+  sparkSessions: 'sparkSessions',
+  passports:     'passports',
+  contacts:      'contacts',
+  orgs:          'organizations',
+  deals:         'deals',
+};
+
+/**
+ * Push ALL localStorage data to Google Sheets (full upload).
+ * Skipped if Supabase is the primary store or Google is not configured.
+ * @returns {Promise<{results: object, error: string|null}>}
+ */
+export async function syncAllToCloud() {
+  if (isConfigured()) {
+    return { results: {}, error: 'Supabase is the primary store; Google Sheets sync skipped.' };
+  }
+  if (!googleSync.isConfigured()) {
+    return { results: {}, error: 'Google Sheets is not configured.' };
+  }
+
+  const results = {};
+  const entries = Object.entries(_syncMap);
+
+  await Promise.all(entries.map(async ([lsKey, sheetKey]) => {
+    const { data: rows } = ls[lsKey].getAll();
+    let ok = 0;
+    let fail = 0;
+    for (const row of rows) {
+      const { error } = await googleSync.save(sheetKey, row);
+      if (error) fail++; else ok++;
+    }
+    results[sheetKey] = { pushed: ok, failed: fail };
+  }));
+
+  return { results, error: null };
+}
+
+/**
+ * Pull ALL data from Google Sheets and merge into localStorage.
+ * For each entity, cloud records are merged by id (cloud wins on conflict).
+ * Skipped if Supabase is the primary store or Google is not configured.
+ * @returns {Promise<{results: object, error: string|null}>}
+ */
+export async function syncAllFromCloud() {
+  if (isConfigured()) {
+    return { results: {}, error: 'Supabase is the primary store; Google Sheets sync skipped.' };
+  }
+  if (!googleSync.isConfigured()) {
+    return { results: {}, error: 'Google Sheets is not configured.' };
+  }
+
+  const results = {};
+  const entries = Object.entries(_syncMap);
+
+  await Promise.all(entries.map(async ([lsKey, sheetKey]) => {
+    const { data: cloudRows, error } = await googleSync.readAll(sheetKey);
+    if (error) {
+      results[sheetKey] = { merged: 0, error: error.message || error };
+      return;
+    }
+    let merged = 0;
+    for (const row of cloudRows) {
+      if (!row.id) continue;
+      ls[lsKey].upsert(row);
+      merged++;
+    }
+    results[sheetKey] = { merged, error: null };
+  }));
+
+  return { results, error: null };
 }
