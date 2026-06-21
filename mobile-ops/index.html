@@ -1,1031 +1,1987 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mobile Ops · ImmersivePoint</title>
-<link rel="stylesheet" href="/shared/theme.css" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mobile Ops · ImmersivePoint</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared/theme.css" />
+  <style>
+    /* ── Mobile Ops Module Styles ── */
 
-<style>
-/* ===== Mobile Ops Module Styles ===== */
+    .ops-header {
+      margin-bottom: var(--sp-6);
+    }
 
-.ops-header {
-  margin-bottom: var(--sp-6);
-}
-.ops-header h2 {
-  font-size: 1.5rem;
-  background: linear-gradient(135deg, #F59E0B, #D97706);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  margin-bottom: var(--sp-1);
-}
-.ops-subtitle {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
+    .ops-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+    }
 
-/* Tabs */
-.ops-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: var(--sp-6);
-  overflow-x: auto;
-}
-.ops-tab {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--ink-dim);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: var(--sp-3) var(--sp-4);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.ops-tab:hover { color: var(--ink); }
-.ops-tab.active {
-  color: #F59E0B;
-  border-bottom-color: #F59E0B;
-}
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+    .ops-header h2 span {
+      color: var(--amber);
+    }
 
-/* Summary cards */
-.summary-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
-}
-.summary-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--sp-3) var(--sp-4);
-  text-align: center;
-}
-.summary-card-value {
-  font-family: 'Orbitron', monospace;
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--ink);
-  line-height: 1.2;
-}
-.summary-card-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  color: var(--muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.summary-card.ready .summary-card-value { color: var(--green); }
-.summary-card.in-use .summary-card-value { color: var(--cyan); }
-.summary-card.attention .summary-card-value { color: var(--red); }
+    .ops-subtitle {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--ink-dim);
+      letter-spacing: 0.06em;
+    }
 
-/* Status badges */
-.badge {
-  display: inline-block;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
-  padding: 0.15rem 0.5rem;
-  border-radius: 3px;
-  text-transform: uppercase;
-}
-.badge-ready     { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
-.badge-in-use    { background: rgba(0,180,216,0.15); color: var(--cyan); border: 1px solid rgba(0,180,216,0.3); }
-.badge-charging  { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
-.badge-maintenance { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-.badge-retired   { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
-.badge-scheduled { background: rgba(0,180,216,0.15); color: var(--cyan); border: 1px solid rgba(0,180,216,0.3); }
-.badge-in-transit { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
-.badge-on-site   { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
-.badge-completed { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
-.badge-cancelled { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-.badge-open      { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-.badge-in-progress { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
-.badge-resolved  { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    /* ── Summary Cards ── */
 
-/* Filter bar */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-4);
-  flex-wrap: wrap;
-}
-.filter-btn {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.68rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--ink-dim);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.filter-btn:hover { border-color: var(--border-hover); color: var(--ink); }
-.filter-btn.active { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #F59E0B; }
+    .ops-stats {
+      display: flex;
+      gap: var(--sp-4);
+      flex-wrap: wrap;
+      margin-bottom: var(--sp-6);
+    }
 
-/* Data table */
-.ops-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-.ops-table thead {
-  background: var(--surface-2);
-}
-.ops-table th {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: var(--sp-2) var(--sp-3);
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-.ops-table td {
-  padding: var(--sp-2) var(--sp-3);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  color: var(--ink-dim);
-  vertical-align: middle;
-}
-.ops-table tr:hover td {
-  background: rgba(245,158,11,0.03);
-}
-.ops-table .col-actions {
-  white-space: nowrap;
-  text-align: right;
-}
-.ops-table .col-actions button {
-  background: none;
-  border: none;
-  color: var(--ink-faint);
-  cursor: pointer;
-  font-size: 0.8rem;
-  padding: 0.2rem 0.4rem;
-  transition: color 0.2s;
-}
-.ops-table .col-actions button:hover { color: var(--ink); }
-.ops-table .col-actions button.del:hover { color: #ef4444; }
+    .ops-stat {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-5);
+      text-align: center;
+      min-width: 120px;
+      flex: 1;
+    }
 
-.table-wrap {
-  overflow-x: auto;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
+    .ops-stat-value {
+      font-family: var(--font-heading);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--amber);
+    }
 
-.empty-msg {
-  text-align: center;
-  padding: var(--sp-8);
-  color: var(--muted);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-}
+    .ops-stat-label {
+      font-size: 0.7rem;
+      color: var(--ink-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 2px;
+    }
 
-/* Toolbar */
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--sp-4);
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
+    /* ── Tab Navigation ── */
 
-/* Modal */
-.modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7);
-  z-index: 9000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--sp-6);
-  width: 95%;
-  max-width: 540px;
-  max-height: 90vh;
-  overflow-y: auto;
-  position: relative;
-}
-.modal::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, #F59E0B, #D97706);
-}
-.modal h3 {
-  font-family: 'Orbitron', monospace;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #F59E0B;
-  margin-bottom: var(--sp-4);
-}
-.modal-close {
-  position: absolute;
-  top: var(--sp-3); right: var(--sp-3);
-  background: none; border: none;
-  color: var(--muted); font-size: 1.2rem;
-  cursor: pointer;
-}
-.modal-close:hover { color: var(--ink); }
+    .ops-tabs {
+      display: flex;
+      gap: var(--sp-1);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--sp-6);
+      overflow-x: auto;
+    }
 
-.form-group {
-  margin-bottom: var(--sp-3);
-}
-.form-group label {
-  display: block;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.62rem;
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: var(--sp-1);
-}
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.82rem;
-  padding: var(--sp-2) var(--sp-3);
-}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none;
-  border-color: rgba(245,158,11,0.5);
-  box-shadow: 0 0 0 2px rgba(245,158,11,0.1);
-}
-.form-group textarea { resize: vertical; min-height: 60px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-.form-actions {
-  display: flex; gap: var(--sp-2); justify-content: flex-end; margin-top: var(--sp-4);
-}
+    .ops-tab {
+      font-family: var(--font-heading);
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      background: none;
+      border: none;
+      padding: var(--sp-3) var(--sp-5);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all var(--transition-fast);
+      position: relative;
+      bottom: -1px;
+      white-space: nowrap;
+    }
 
-.btn-amber {
-  background: #F59E0B; color: #000; font-weight: 600;
-  border: none; padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius-sm); cursor: pointer;
-  font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem;
-  transition: all 0.2s;
-}
-.btn-amber:hover { background: #D97706; transform: translateY(-1px); }
+    .ops-tab:hover {
+      color: var(--ink);
+    }
 
-/* Deployment cards */
-.dep-section-label {
-  font-family: 'Orbitron', monospace;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-bottom: var(--sp-3);
-  padding-bottom: var(--sp-2);
-  border-bottom: 1px solid var(--border);
-}
-.dep-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--sp-4);
-  margin-bottom: var(--sp-3);
-  transition: border-color 0.2s;
-}
-.dep-card:hover { border-color: rgba(245,158,11,0.3); }
-.dep-card-header {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  margin-bottom: var(--sp-2); gap: var(--sp-2);
-}
-.dep-card-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 600; font-size: 0.9rem; color: var(--ink);
-}
-.dep-card-date {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.72rem; color: #F59E0B;
-}
-.dep-card-meta {
-  display: flex; flex-wrap: wrap; gap: var(--sp-3);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.65rem; color: var(--ink-dim);
-  margin-bottom: var(--sp-2);
-}
-.dep-card-meta span::before {
-  content: attr(data-label);
-  color: var(--muted);
-  margin-right: 0.3em;
-}
-.dep-card-actions {
-  display: flex; gap: var(--sp-2); justify-content: flex-end;
-}
-.dep-card-actions button {
-  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
-  color: var(--ink-dim); font-size: 0.7rem; padding: 0.2rem 0.5rem; cursor: pointer;
-  transition: all 0.2s;
-}
-.dep-card-actions button:hover { color: var(--ink); border-color: var(--border-hover); }
-.dep-card-actions button.del:hover { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+    .ops-tab.active {
+      color: var(--amber);
+      border-bottom-color: var(--amber);
+    }
 
-/* Checklist */
-.checklist-selector {
-  display: flex; align-items: center; gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
-}
-.checklist-selector label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em;
-}
-.checklist-selector select {
-  background: var(--surface-1); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); color: var(--ink);
-  font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem;
-  padding: var(--sp-2) var(--sp-3);
-}
-.checklist-progress {
-  margin-bottom: var(--sp-4);
-  display: flex; align-items: center; gap: var(--sp-3);
-}
-.checklist-progress-bar {
-  flex: 1; height: 6px; background: var(--surface-2);
-  border-radius: 3px; overflow: hidden;
-}
-.checklist-progress-fill {
-  height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, #F59E0B, #22c55e);
-  transition: width 0.3s;
-}
-.checklist-progress-text {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem; color: var(--muted); min-width: 80px;
-}
-.all-clear {
-  text-align: center; padding: var(--sp-4);
-  font-family: 'Orbitron', monospace; font-size: 0.85rem;
-  color: #22c55e; font-weight: 700;
-  display: none;
-}
-.all-clear.visible { display: block; }
+    .ops-tab .tab-count {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--ink-faint);
+      margin-left: var(--sp-2);
+      background: var(--surface-1);
+      padding: 1px 6px;
+      border-radius: 999px;
+    }
 
-.checklist-group {
-  margin-bottom: var(--sp-4);
-}
-.checklist-group-title {
-  font-family: 'Orbitron', monospace;
-  font-size: 0.62rem; font-weight: 700;
-  color: #F59E0B; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: var(--sp-2);
-}
-.checklist-item {
-  display: flex; align-items: center; gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border-bottom: 1px solid rgba(255,255,255,0.03);
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.8rem; color: var(--ink-dim);
-}
-.checklist-item input[type="checkbox"] {
-  accent-color: #F59E0B;
-  width: 16px; height: 16px;
-}
-.checklist-item.checked { color: var(--muted); text-decoration: line-through; }
+    .ops-tab.active .tab-count {
+      color: var(--amber);
+      background: rgba(244, 185, 66, 0.1);
+    }
 
-@media (max-width: 640px) {
-  .form-row { grid-template-columns: 1fr; }
-  .summary-row { grid-template-columns: repeat(2, 1fr); }
-}
-</style>
+    /* ── Panel ── */
+
+    .ops-panel {
+      display: none;
+    }
+
+    .ops-panel.active {
+      display: block;
+    }
+
+    /* ── Toolbar ── */
+
+    .ops-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--sp-4);
+    }
+
+    .ops-toolbar .input-search {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .ops-toolbar .select {
+      min-width: 160px;
+      flex: 0 0 auto;
+    }
+
+    /* ── Status Filter Buttons ── */
+
+    .status-filters {
+      display: flex;
+      gap: var(--sp-2);
+      flex-wrap: wrap;
+      margin-bottom: var(--sp-4);
+    }
+
+    .status-filter-btn {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: var(--sp-1) var(--sp-3);
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--ink-dim);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-filter-btn:hover {
+      border-color: rgba(244, 185, 66, 0.4);
+      color: var(--ink);
+    }
+
+    .status-filter-btn.active {
+      background: rgba(244, 185, 66, 0.15);
+      border-color: rgba(244, 185, 66, 0.4);
+      color: var(--amber);
+    }
+
+    /* ── Status Badges ── */
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-weight: 500;
+      text-transform: capitalize;
+    }
+
+    /* Device statuses */
+    .status-ready       { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .status-in-use      { background: rgba(0, 180, 216, 0.15); color: var(--cyan); }
+    .status-charging    { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .status-maintenance { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .status-retired     { background: rgba(143, 163, 184, 0.15); color: var(--ink-dim); }
+
+    /* Deployment statuses */
+    .status-scheduled   { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+    .status-in-transit  { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .status-on-site     { background: rgba(0, 180, 216, 0.15); color: var(--cyan); }
+    .status-completed   { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .status-cancelled   { background: rgba(143, 163, 184, 0.15); color: var(--ink-dim); }
+
+    /* Maintenance statuses */
+    .status-open        { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .status-in-progress { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .status-resolved    { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+
+    /* ── Condition Badges ── */
+
+    .condition-pill {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .condition-excellent { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+    .condition-good      { background: rgba(0, 180, 216, 0.12); color: var(--cyan); }
+    .condition-fair      { background: rgba(244, 185, 66, 0.12); color: var(--amber); }
+    .condition-poor      { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+
+    /* ── Table Enhancements ── */
+
+    .device-name {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .device-serial {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-dim);
+    }
+
+    .device-type-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .type-quest-3       { background: rgba(0, 180, 216, 0.15); color: var(--cyan); }
+    .type-vive-focus-3  { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+    .type-laptop        { background: rgba(244, 185, 66, 0.15); color: var(--amber); }
+    .type-router        { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+    .type-accessory     { background: rgba(143, 163, 184, 0.15); color: var(--ink-dim); }
+
+    .last-checked-date {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--ink-dim);
+    }
+
+    .actions-cell {
+      display: flex;
+      gap: var(--sp-1);
+    }
+
+    .table td.actions-cell {
+      white-space: nowrap;
+    }
+
+    /* ── Deployment Cards ── */
+
+    .deployment-section-title {
+      font-family: var(--font-heading);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--amber);
+      margin: var(--sp-5) 0 var(--sp-3) 0;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .deployment-section-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber);
+    }
+
+    .deployment-cards {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-3);
+    }
+
+    .deployment-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4) var(--sp-5);
+      transition: all var(--transition-fast);
+    }
+
+    .deployment-card:hover {
+      border-color: rgba(244, 185, 66, 0.35);
+      box-shadow: 0 0 20px rgba(244, 185, 66, 0.12);
+    }
+
+    .deployment-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-2);
+      flex-wrap: wrap;
+    }
+
+    .deployment-date {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--amber);
+      font-weight: 600;
+    }
+
+    .deployment-location {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--ink);
+    }
+
+    .deployment-meta {
+      display: flex;
+      gap: var(--sp-5);
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      color: var(--ink-dim);
+      margin-top: var(--sp-2);
+    }
+
+    .deployment-meta span {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-1);
+    }
+
+    .deployment-notes {
+      font-size: 0.82rem;
+      color: var(--ink-dim);
+      margin-top: var(--sp-2);
+      line-height: 1.5;
+    }
+
+    .deployment-actions {
+      display: flex;
+      gap: var(--sp-1);
+      margin-top: var(--sp-3);
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Checklist ── */
+
+    .checklist-deploy-selector {
+      margin-bottom: var(--sp-5);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+    }
+
+    .checklist-deploy-selector label {
+      font-family: var(--font-heading);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ink-dim);
+    }
+
+    .checklist-all-clear {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-5);
+      border-radius: var(--radius-md);
+      font-family: var(--font-heading);
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: var(--sp-5);
+      transition: all var(--transition-fast);
+    }
+
+    .checklist-all-clear.clear {
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #4ade80;
+    }
+
+    .checklist-all-clear.pending {
+      background: rgba(244, 185, 66, 0.12);
+      border: 1px solid rgba(244, 185, 66, 0.3);
+      color: var(--amber);
+    }
+
+    .checklist-group {
+      margin-bottom: var(--sp-5);
+    }
+
+    .checklist-group-title {
+      font-family: var(--font-heading);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--amber);
+      margin: 0 0 var(--sp-3) 0;
+      padding-bottom: var(--sp-2);
+      border-bottom: 1px solid rgba(244, 185, 66, 0.15);
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-3);
+      border-radius: var(--radius-sm);
+      transition: background var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .checklist-item:hover {
+      background: rgba(244, 185, 66, 0.05);
+    }
+
+    .checklist-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--ink-faint);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .checklist-item input[type="checkbox"]:checked {
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .checklist-item input[type="checkbox"]:checked::after {
+      content: '\2713';
+      position: absolute;
+      top: -1px;
+      left: 2px;
+      font-size: 12px;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .checklist-item label {
+      font-size: 0.88rem;
+      color: var(--ink);
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .checklist-item.checked label {
+      color: var(--ink-dim);
+      text-decoration: line-through;
+      text-decoration-color: var(--ink-faint);
+    }
+
+    /* ── Maintenance Log Cards ── */
+
+    .log-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4) var(--sp-5);
+      margin-bottom: var(--sp-3);
+    }
+
+    .log-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--sp-2);
+    }
+
+    .log-issue-type {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(244, 185, 66, 0.15);
+      color: var(--amber);
+    }
+
+    .log-date {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-faint);
+    }
+
+    .log-device {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--ink);
+      margin-bottom: var(--sp-2);
+    }
+
+    .log-description {
+      font-size: 0.85rem;
+      color: var(--ink-dim);
+      line-height: 1.5;
+      margin-bottom: var(--sp-2);
+    }
+
+    .log-resolution {
+      font-size: 0.82rem;
+      color: var(--ink-dim);
+      padding: var(--sp-2) var(--sp-3);
+      background: rgba(34, 197, 94, 0.06);
+      border-left: 2px solid var(--success);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-top: var(--sp-2);
+    }
+
+    .log-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: var(--sp-3);
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--ink-dim);
+    }
+
+    /* ── Modal ── */
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 12, 22, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 90%;
+      max-width: 560px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(12px);
+      transition: transform var(--transition-fast);
+    }
+
+    .modal-overlay.open .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-5) var(--sp-6);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h2 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--ink-dim);
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: var(--sp-1);
+      line-height: 1;
+      transition: color var(--transition-fast);
+    }
+
+    .modal-close:hover {
+      color: var(--ink);
+    }
+
+    .modal-body {
+      padding: var(--sp-5) var(--sp-6);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-4);
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-6);
+      border-top: 1px solid var(--border);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-4);
+    }
+
+    /* ── Confirm Dialog ── */
+
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 12, 22, 0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+    }
+
+    .confirm-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-6);
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .confirm-box h3 {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      color: var(--ink);
+      margin: 0 0 var(--sp-3) 0;
+    }
+
+    .confirm-box p {
+      font-size: 0.85rem;
+      color: var(--ink-dim);
+      margin: 0 0 var(--sp-5) 0;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: var(--sp-3);
+      justify-content: center;
+    }
+
+    /* ── Empty State ── */
+
+    .empty-state {
+      text-align: center;
+      padding: var(--sp-16) var(--sp-6);
+      color: var(--ink-dim);
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: var(--sp-4);
+      opacity: 0.4;
+    }
+
+    .empty-state h3 {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      color: var(--ink);
+      margin: 0 0 var(--sp-2) 0;
+    }
+
+    .empty-state p {
+      font-size: 0.85rem;
+      margin: 0 0 var(--sp-5) 0;
+    }
+
+    /* ── Toast ── */
+
+    .toast-container {
+      position: fixed;
+      bottom: var(--sp-6);
+      right: var(--sp-6);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    .toast {
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-5);
+      font-size: 0.85rem;
+      color: var(--ink);
+      box-shadow: var(--shadow-md);
+      animation: slideIn 0.25s ease;
+    }
+
+    .toast-success { border-left: 3px solid var(--success); }
+    .toast-error   { border-left: 3px solid var(--danger); }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+
+    @media (max-width: 768px) {
+      .ops-stats {
+        flex-direction: column;
+      }
+
+      .ops-stat {
+        min-width: 0;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .ops-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .ops-toolbar .select {
+        width: 100%;
+      }
+
+      .table-wrap {
+        font-size: 0.82rem;
+      }
+
+      .deployment-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    /* ── Print ── */
+
+    @media print {
+      .ops-tabs, .ops-toolbar, .status-filters, .ops-stats,
+      .deployment-actions, .actions-cell, .ops-header,
+      .btn, button, .modal-overlay, .toast-container,
+      .checklist-deploy-selector, .log-footer .actions-cell {
+        display: none !important;
+      }
+
+      .ops-panel {
+        display: block !important;
+      }
+
+      .checklist-item input[type="checkbox"] {
+        appearance: auto;
+        -webkit-appearance: auto;
+      }
+
+      body {
+        background: #fff !important;
+        color: #111 !important;
+      }
+
+      .checklist-group-title {
+        color: #333 !important;
+        border-bottom-color: #ccc !important;
+      }
+
+      .checklist-item label {
+        color: #111 !important;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-<!-- Modal for devices -->
-<div class="modal-overlay" id="device-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('device-modal')">&times;</button>
-    <h3 id="device-modal-title">Add Device</h3>
-    <input type="hidden" id="dm_id" />
-    <div class="form-row">
-      <div class="form-group">
-        <label>Device Name</label>
-        <input type="text" id="dm_name" placeholder="e.g. Quest 3 — Unit 01" />
-      </div>
-      <div class="form-group">
-        <label>Type</label>
-        <select id="dm_type">
-          <option value="Quest 3">Quest 3</option>
-          <option value="Vive Focus 3">Vive Focus 3</option>
-          <option value="Laptop">Laptop</option>
-          <option value="Router">Router</option>
-          <option value="Accessory">Accessory</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Serial Number</label>
-        <input type="text" id="dm_serial" placeholder="e.g. SN-20260101-001" />
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="dm_status">
-          <option value="Ready">Ready</option>
-          <option value="In Use">In Use</option>
-          <option value="Charging">Charging</option>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Retired">Retired</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Condition</label>
-        <select id="dm_condition">
-          <option value="Excellent">Excellent</option>
-          <option value="Good">Good</option>
-          <option value="Fair">Fair</option>
-          <option value="Poor">Poor</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Last Checked</label>
-        <input type="date" id="dm_checked" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Notes</label>
-      <textarea id="dm_notes" rows="2" placeholder="Optional notes..."></textarea>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('device-modal')">Cancel</button>
-      <button class="btn-amber" onclick="saveDeviceForm()">Save Device</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal for deployments -->
-<div class="modal-overlay" id="deploy-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('deploy-modal')">&times;</button>
-    <h3 id="deploy-modal-title">Add Deployment</h3>
-    <input type="hidden" id="dep_id" />
-    <div class="form-row">
-      <div class="form-group">
-        <label>Date</label>
-        <input type="date" id="dep_date" />
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="dep_status">
-          <option value="Scheduled">Scheduled</option>
-          <option value="In Transit">In Transit</option>
-          <option value="On Site">On Site</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Location / Site</label>
-        <input type="text" id="dep_location" placeholder="e.g. ACTC Main Campus" />
-      </div>
-      <div class="form-group">
-        <label>Organization</label>
-        <input type="text" id="dep_org" placeholder="e.g. Ashland CTC" />
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Contact Person</label>
-        <input type="text" id="dep_contact" placeholder="e.g. Mary Bullard" />
-      </div>
-      <div class="form-group">
-        <label>Headsets Needed</label>
-        <input type="number" id="dep_headsets" min="0" value="4" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Notes</label>
-      <textarea id="dep_notes" rows="2" placeholder="Special requirements, setup notes..."></textarea>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('deploy-modal')">Cancel</button>
-      <button class="btn-amber" onclick="saveDeployForm()">Save Deployment</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal for maintenance -->
-<div class="modal-overlay" id="maint-modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('maint-modal')">&times;</button>
-    <h3 id="maint-modal-title">Add Maintenance Entry</h3>
-    <input type="hidden" id="mt_id" />
-    <div class="form-row">
-      <div class="form-group">
-        <label>Device</label>
-        <select id="mt_device"></select>
-      </div>
-      <div class="form-group">
-        <label>Issue Type</label>
-        <select id="mt_type">
-          <option value="Hardware">Hardware</option>
-          <option value="Software">Software</option>
-          <option value="Battery">Battery</option>
-          <option value="Lens">Lens</option>
-          <option value="Controller">Controller</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Description</label>
-      <textarea id="mt_desc" rows="2" placeholder="Describe the issue..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>Resolution</label>
-      <textarea id="mt_resolution" rows="2" placeholder="How was it resolved? (leave blank if open)"></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Resolved By</label>
-        <input type="text" id="mt_resolved_by" placeholder="e.g. Tech name" />
-      </div>
-      <div class="form-group">
-        <label>Status</label>
-        <select id="mt_status">
-          <option value="Open">Open</option>
-          <option value="In Progress">In Progress</option>
-          <option value="Resolved">Resolved</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-ghost" onclick="closeModal('maint-modal')">Cancel</button>
-      <button class="btn-amber" onclick="saveMaintForm()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<div id="app"></div>
-
-<script type="module">
-import { requireAuth, getRole } from '/shared/auth.js';
-import { renderNav } from '/shared/nav.js';
-import {
-  getDevices, saveDevice, deleteDevice,
-  getDeployments, saveDeployment, deleteDeployment,
-  getMaintenanceLogs, saveMaintenanceLog, deleteMaintenanceLog,
-} from '/shared/store.js';
-
-await requireAuth(['facilitator', 'partner', 'admin']);
-await renderNav('mobile-ops');
-
-const CHECKLIST_KEY = 'ip_mobile_checklists';
-
-const CHECKLIST_GROUPS = [
-  { name: 'Power', items: ['Extension cords (3)', 'Power strips (2)', 'Surge protectors', 'Headset charging cables', 'Laptop chargers'] },
-  { name: 'Network', items: ['Wi-Fi router', 'Ethernet cables (4)', 'Mobile hotspot (backup)', 'Router power adapter'] },
-  { name: 'VR Equipment', items: ['Quest 3 headsets', 'Vive Focus 3 headsets', 'Controllers (all pairs)', 'Headset carry cases', 'Lens wipes & cleaning kit', 'Extra batteries (controllers)'] },
-  { name: 'Facilitation', items: ['Facilitator laptop', 'Projector / display', 'Portable speakers', 'Printed materials / handouts', 'Sign-in sheet', 'ImmersivePoint stickers / swag'] },
-];
-
-/* ── State ──────────────────────────────────── */
-let activeTab = 'inventory';
-let deviceFilter = 'All';
-let maintFilter = 'All';
-let selectedDeployId = null;
-
-/* ── Boot ───────────────────────────────────── */
-document.getElementById('app').innerHTML = `
+  <!-- Module Header -->
   <div class="ops-header">
-    <h2>Mobile Operations</h2>
+    <h2><span>///</span> Mobile Operations</h2>
     <span class="ops-subtitle">Hardware &middot; Deployments &middot; Inventory</span>
   </div>
 
-  <div class="ops-tabs" id="ops-tabs">
-    <button class="ops-tab active" data-tab="inventory">Hardware Inventory</button>
-    <button class="ops-tab" data-tab="deployments">Deployment Schedule</button>
-    <button class="ops-tab" data-tab="checklist">Kit Checklist</button>
-    <button class="ops-tab" data-tab="maintenance">Maintenance Log</button>
+  <!-- Summary Stats -->
+  <div class="ops-stats" id="ops-stats">
+    <div class="ops-stat">
+      <div class="ops-stat-value" id="stat-total">--</div>
+      <div class="ops-stat-label">Total Devices</div>
+    </div>
+    <div class="ops-stat">
+      <div class="ops-stat-value" id="stat-ready">--</div>
+      <div class="ops-stat-label">Ready</div>
+    </div>
+    <div class="ops-stat">
+      <div class="ops-stat-value" id="stat-in-use">--</div>
+      <div class="ops-stat-label">In Use</div>
+    </div>
+    <div class="ops-stat">
+      <div class="ops-stat-value" id="stat-attention">--</div>
+      <div class="ops-stat-label">Needs Attention</div>
+    </div>
   </div>
 
-  <div class="tab-panel active" id="panel-inventory"></div>
-  <div class="tab-panel" id="panel-deployments"></div>
-  <div class="tab-panel" id="panel-checklist"></div>
-  <div class="tab-panel" id="panel-maintenance"></div>
-`;
+  <!-- Tab Navigation -->
+  <div class="ops-tabs" role="tablist">
+    <button class="ops-tab active" data-tab="inventory" role="tab" aria-selected="true">
+      Inventory <span class="tab-count" id="tab-count-inventory">0</span>
+    </button>
+    <button class="ops-tab" data-tab="deployments" role="tab" aria-selected="false">
+      Deployments <span class="tab-count" id="tab-count-deployments">0</span>
+    </button>
+    <button class="ops-tab" data-tab="checklist" role="tab" aria-selected="false">
+      Kit Checklist
+    </button>
+    <button class="ops-tab" data-tab="maintenance" role="tab" aria-selected="false">
+      Maintenance <span class="tab-count" id="tab-count-maintenance">0</span>
+    </button>
+  </div>
 
-document.getElementById('ops-tabs').addEventListener('click', (e) => {
-  const btn = e.target.closest('.ops-tab');
-  if (!btn) return;
-  activeTab = btn.dataset.tab;
-  document.querySelectorAll('.ops-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTab));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === `panel-${activeTab}`));
-  render();
-});
-
-/* ── Helpers ────────────────────────────────── */
-function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
-
-function badgeClass(status) {
-  return 'badge badge-' + (status || '').toLowerCase().replace(/\s+/g, '-');
-}
-
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-
-/* ── Render ─────────────────────────────────── */
-function render() {
-  if (activeTab === 'inventory') renderInventory();
-  else if (activeTab === 'deployments') renderDeployments();
-  else if (activeTab === 'checklist') renderChecklist();
-  else if (activeTab === 'maintenance') renderMaintenance();
-}
-
-/* ── INVENTORY ──────────────────────────────── */
-function renderInventory() {
-  const devices = getDevices();
-  const filtered = deviceFilter === 'All' ? devices : devices.filter(d => d.status === deviceFilter);
-
-  const ready = devices.filter(d => d.status === 'Ready').length;
-  const inUse = devices.filter(d => d.status === 'In Use').length;
-  const needsAttn = devices.filter(d => d.status === 'Maintenance' || d.condition === 'Poor').length;
-
-  const statuses = ['All', 'Ready', 'In Use', 'Charging', 'Maintenance', 'Retired'];
-
-  let html = `
-    <div class="summary-row">
-      <div class="summary-card"><div class="summary-card-value">${devices.length}</div><div class="summary-card-label">Total Devices</div></div>
-      <div class="summary-card ready"><div class="summary-card-value">${ready}</div><div class="summary-card-label">Ready</div></div>
-      <div class="summary-card in-use"><div class="summary-card-value">${inUse}</div><div class="summary-card-label">In Use</div></div>
-      <div class="summary-card attention"><div class="summary-card-value">${needsAttn}</div><div class="summary-card-label">Needs Attention</div></div>
+  <!-- ═══════════════ INVENTORY PANEL ═══════════════ -->
+  <div class="ops-panel active" id="panel-inventory" role="tabpanel">
+    <div class="status-filters" id="device-status-filters">
+      <button class="status-filter-btn active" data-filter="">All</button>
+      <button class="status-filter-btn" data-filter="Ready">Ready</button>
+      <button class="status-filter-btn" data-filter="In Use">In Use</button>
+      <button class="status-filter-btn" data-filter="Charging">Charging</button>
+      <button class="status-filter-btn" data-filter="Maintenance">Maintenance</button>
+      <button class="status-filter-btn" data-filter="Retired">Retired</button>
     </div>
-    <div class="toolbar">
-      <div class="filter-bar">
-        ${statuses.map(s => `<button class="filter-btn${s === deviceFilter ? ' active' : ''}" data-filter="${s}">${s}</button>`).join('')}
+    <div class="ops-toolbar">
+      <input type="text" class="input input-search" id="device-search" placeholder="Search devices by name or serial...">
+      <select class="select" id="device-type-filter">
+        <option value="">All Types</option>
+        <option value="Quest 3">Quest 3</option>
+        <option value="Vive Focus 3">Vive Focus 3</option>
+        <option value="Laptop">Laptop</option>
+        <option value="Router">Router</option>
+        <option value="Accessory">Accessory</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-device">+ Add Device</button>
+    </div>
+    <div id="devices-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#x2699;</div>
+        <h3>No devices yet</h3>
+        <p>Add your first device to start tracking hardware inventory.</p>
       </div>
-      <button class="btn-amber" onclick="window._openDeviceModal()">+ Add Device</button>
     </div>
-  `;
+  </div>
 
-  if (filtered.length === 0) {
-    html += '<div class="empty-msg">No devices found. Add your first device to get started.</div>';
-  } else {
-    html += `<div class="table-wrap"><table class="ops-table">
-      <thead><tr>
-        <th>Name</th><th>Type</th><th>Serial</th><th>Status</th><th>Condition</th><th>Last Checked</th><th>Notes</th><th></th>
-      </tr></thead><tbody>`;
-    for (const d of filtered) {
-      html += `<tr>
-        <td style="font-weight:500;color:var(--ink)">${esc(d.name)}</td>
-        <td>${esc(d.type)}</td>
-        <td style="font-family:'Share Tech Mono',monospace;font-size:0.72rem">${esc(d.serial)}</td>
-        <td><span class="${badgeClass(d.status)}">${esc(d.status)}</span></td>
-        <td>${esc(d.condition)}</td>
-        <td style="font-family:'Share Tech Mono',monospace;font-size:0.72rem">${esc(d.last_checked)}</td>
-        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(d.notes)}">${esc(d.notes)}</td>
-        <td class="col-actions">
-          <button onclick="window._editDevice('${d.id}')" title="Edit">&#9998;</button>
-          <button class="del" onclick="window._deleteDevice('${d.id}')" title="Delete">&#10005;</button>
-        </td>
-      </tr>`;
-    }
-    html += '</tbody></table></div>';
-  }
-
-  document.getElementById('panel-inventory').innerHTML = html;
-
-  document.querySelectorAll('#panel-inventory .filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => { deviceFilter = btn.dataset.filter; renderInventory(); });
-  });
-}
-
-/* ── DEPLOYMENTS ────────────────────────────── */
-function renderDeployments() {
-  const deps = getDeployments();
-  const today = todayStr();
-  const upcoming = deps.filter(d => d.date >= today && d.status !== 'Completed' && d.status !== 'Cancelled')
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const past = deps.filter(d => d.date < today || d.status === 'Completed' || d.status === 'Cancelled')
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  let html = `
-    <div class="toolbar">
-      <div></div>
-      <button class="btn-amber" onclick="window._openDeployModal()">+ Add Deployment</button>
+  <!-- ═══════════════ DEPLOYMENTS PANEL ═══════════════ -->
+  <div class="ops-panel" id="panel-deployments" role="tabpanel">
+    <div class="ops-toolbar">
+      <input type="text" class="input input-search" id="deploy-search" placeholder="Search deployments...">
+      <select class="select" id="deploy-status-filter">
+        <option value="">All Statuses</option>
+        <option value="Scheduled">Scheduled</option>
+        <option value="In Transit">In Transit</option>
+        <option value="On Site">On Site</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-deploy">+ Add Deployment</button>
     </div>
-  `;
-
-  if (upcoming.length > 0) {
-    html += '<div class="dep-section-label">Upcoming & Active</div>';
-    for (const d of upcoming) html += deployCard(d);
-  }
-  if (past.length > 0) {
-    html += '<div class="dep-section-label" style="margin-top:var(--sp-5)">Past</div>';
-    for (const d of past) html += deployCard(d);
-  }
-  if (deps.length === 0) {
-    html += '<div class="empty-msg">No deployments scheduled. Plan your first deployment to get started.</div>';
-  }
-
-  document.getElementById('panel-deployments').innerHTML = html;
-}
-
-function deployCard(d) {
-  const dateObj = new Date(d.date + 'T12:00:00');
-  const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-  return `<div class="dep-card">
-    <div class="dep-card-header">
-      <div>
-        <div class="dep-card-title">${esc(d.location)}</div>
-        <div class="dep-card-date">${dateStr}</div>
+    <div id="deployments-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#x26F3;</div>
+        <h3>No deployments scheduled</h3>
+        <p>Schedule your first mobile unit deployment.</p>
       </div>
-      <span class="${badgeClass(d.status)}">${esc(d.status)}</span>
     </div>
-    <div class="dep-card-meta">
-      <span data-label="Org:">${esc(d.organization)}</span>
-      <span data-label="Contact:">${esc(d.contact_person)}</span>
-      <span data-label="Headsets:">${d.headsets_needed || 0}</span>
+  </div>
+
+  <!-- ═══════════════ CHECKLIST PANEL ═══════════════ -->
+  <div class="ops-panel" id="panel-checklist" role="tabpanel">
+    <div class="checklist-deploy-selector">
+      <label for="checklist-deployment">Deployment:</label>
+      <select class="select" id="checklist-deployment">
+        <option value="">-- Select a deployment --</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" id="btn-print-checklist" style="display:none;">Print Checklist</button>
     </div>
-    ${d.notes ? `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:var(--sp-2)">${esc(d.notes)}</div>` : ''}
-    <div class="dep-card-actions">
-      <button onclick="window._editDeploy('${d.id}')">Edit</button>
-      <button class="del" onclick="window._deleteDeploy('${d.id}')">Delete</button>
+    <div id="checklist-status"></div>
+    <div id="checklist-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#x2611;</div>
+        <h3>Select a deployment</h3>
+        <p>Choose a deployment above to view and manage its pre-deployment checklist.</p>
+      </div>
     </div>
-  </div>`;
-}
+  </div>
 
-/* ── CHECKLIST ──────────────────────────────── */
-function renderChecklist() {
-  const deps = getDeployments().filter(d => d.status !== 'Cancelled');
-  const checklists = getChecklists();
-
-  let html = `<div class="checklist-selector">
-    <label>Deployment:</label>
-    <select id="checklist-deploy-select">
-      <option value="">— Select a deployment —</option>
-      ${deps.map(d => `<option value="${d.id}"${d.id === selectedDeployId ? ' selected' : ''}>${esc(d.location)} (${d.date})</option>`).join('')}
-    </select>
-  </div>`;
-
-  if (!selectedDeployId) {
-    html += '<div class="empty-msg">Select a deployment above to load its checklist.</div>';
-  } else {
-    const state = checklists[selectedDeployId] || {};
-    const allItems = CHECKLIST_GROUPS.flatMap(g => g.items);
-    const checked = allItems.filter(i => state[i]).length;
-    const total = allItems.length;
-    const pct = total > 0 ? Math.round(checked / total * 100) : 0;
-    const allClear = checked === total && total > 0;
-
-    html += `<div class="checklist-progress">
-      <div class="checklist-progress-bar"><div class="checklist-progress-fill" style="width:${pct}%"></div></div>
-      <div class="checklist-progress-text">${checked}/${total} (${pct}%)</div>
+  <!-- ═══════════════ MAINTENANCE PANEL ═══════════════ -->
+  <div class="ops-panel" id="panel-maintenance" role="tabpanel">
+    <div class="ops-toolbar">
+      <input type="text" class="input input-search" id="maint-search" placeholder="Search maintenance logs...">
+      <select class="select" id="maint-status-filter">
+        <option value="">All Statuses</option>
+        <option value="Open">Open</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+      <select class="select" id="maint-device-filter">
+        <option value="">All Devices</option>
+      </select>
+      <button class="btn btn-primary" id="btn-add-maint">+ Log Issue</button>
     </div>
-    <div class="all-clear${allClear ? ' visible' : ''}">ALL CLEAR — Kit is ready for deployment</div>`;
+    <div id="maintenance-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">&#x2692;</div>
+        <h3>No maintenance logs</h3>
+        <p>Log your first maintenance issue or repair.</p>
+      </div>
+    </div>
+  </div>
 
-    for (const group of CHECKLIST_GROUPS) {
-      html += `<div class="checklist-group">
-        <div class="checklist-group-title">${esc(group.name)}</div>`;
-      for (const item of group.items) {
-        const isChecked = state[item] || false;
-        html += `<div class="checklist-item${isChecked ? ' checked' : ''}">
-          <input type="checkbox" data-item="${esc(item)}" ${isChecked ? 'checked' : ''} />
-          <span>${esc(item)}</span>
-        </div>`;
+  <!-- ═══════════════ DEVICE MODAL ═══════════════ -->
+  <div class="modal-overlay" id="device-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="device-modal-title">Add Device</h2>
+        <button class="modal-close" data-close="device-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="device-form-id">
+        <div class="form-group">
+          <label class="form-label" for="device-name">Device Name *</label>
+          <input type="text" class="input" id="device-name" placeholder="e.g. Quest 3 - Unit A1" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="device-type">Type *</label>
+            <select class="select" id="device-type">
+              <option value="Quest 3">Quest 3</option>
+              <option value="Vive Focus 3">Vive Focus 3</option>
+              <option value="Laptop">Laptop</option>
+              <option value="Router">Router</option>
+              <option value="Accessory">Accessory</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="device-serial">Serial Number</label>
+            <input type="text" class="input" id="device-serial" placeholder="SN-XXXX-XXXX">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="device-status">Status</label>
+            <select class="select" id="device-status">
+              <option value="Ready">Ready</option>
+              <option value="In Use">In Use</option>
+              <option value="Charging">Charging</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Retired">Retired</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="device-condition">Condition</label>
+            <select class="select" id="device-condition">
+              <option value="Excellent">Excellent</option>
+              <option value="Good">Good</option>
+              <option value="Fair">Fair</option>
+              <option value="Poor">Poor</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="device-last-checked">Last Checked</label>
+          <input type="date" class="input" id="device-last-checked">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="device-notes">Notes</label>
+          <textarea class="textarea" id="device-notes" rows="3" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="device-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-device">Save Device</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DEPLOYMENT MODAL ═══════════════ -->
+  <div class="modal-overlay" id="deploy-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="deploy-modal-title">Add Deployment</h2>
+        <button class="modal-close" data-close="deploy-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="deploy-form-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="deploy-date">Date *</label>
+            <input type="date" class="input" id="deploy-date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="deploy-status">Status</label>
+            <select class="select" id="deploy-status">
+              <option value="Scheduled">Scheduled</option>
+              <option value="In Transit">In Transit</option>
+              <option value="On Site">On Site</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="deploy-location">Location / Site *</label>
+          <input type="text" class="input" id="deploy-location" placeholder="e.g. Mingo County Career Center" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="deploy-org">Organization</label>
+          <input type="text" class="input" id="deploy-org" placeholder="e.g. Tug Valley ARH">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="deploy-contact">Contact Person</label>
+            <input type="text" class="input" id="deploy-contact" placeholder="Name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="deploy-headsets">Headsets Needed</label>
+            <input type="number" class="input" id="deploy-headsets" min="0" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="deploy-notes">Notes</label>
+          <textarea class="textarea" id="deploy-notes" rows="3" placeholder="Deployment details..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="deploy-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-deploy">Save Deployment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MAINTENANCE MODAL ═══════════════ -->
+  <div class="modal-overlay" id="maint-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="maint-modal-title">Log Maintenance Issue</h2>
+        <button class="modal-close" data-close="maint-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="maint-form-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="maint-device">Device *</label>
+            <select class="select" id="maint-device" required>
+              <option value="">-- Select device --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="maint-date">Date</label>
+            <input type="date" class="input" id="maint-date">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="maint-issue-type">Issue Type *</label>
+            <select class="select" id="maint-issue-type" required>
+              <option value="Hardware">Hardware</option>
+              <option value="Software">Software</option>
+              <option value="Battery">Battery</option>
+              <option value="Lens">Lens</option>
+              <option value="Controller">Controller</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="maint-status">Status</label>
+            <select class="select" id="maint-status">
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="maint-description">Description *</label>
+          <textarea class="textarea" id="maint-description" rows="3" placeholder="Describe the issue..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="maint-resolution">Resolution</label>
+          <textarea class="textarea" id="maint-resolution" rows="2" placeholder="How was it resolved? (if applicable)"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="maint-resolved-by">Resolved By</label>
+          <input type="text" class="input" id="maint-resolved-by" placeholder="Name">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="maint-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-maint">Save Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ═══════════════ APPLICATION LOGIC ═══════════════ -->
+  <script type="module">
+    import { requireAuth, getRole } from '/shared/auth.js';
+    import { renderNav } from '/shared/nav.js';
+    import {
+      getDevices, saveDevice, deleteDevice,
+      getDeployments, saveDeployment, deleteDeployment,
+      getMaintenanceLogs, saveMaintenanceLog, deleteMaintenanceLog
+    } from '/shared/store.js';
+
+    // ── Auth + Nav ──
+    const user = await requireAuth(['facilitator', 'partner', 'admin']);
+    await renderNav('mobile-ops');
+    const currentRole = await getRole();
+
+    // ── Checklist Storage ──
+    const CHECKLIST_KEY = 'ip_mobile_checklists';
+
+    // ── State ──
+    let allDevices      = [];
+    let allDeployments  = [];
+    let allMaintenance  = [];
+    let deviceMap       = {};
+
+    // ── Checklist Template ──
+    const CHECKLIST_TEMPLATE = [
+      {
+        group: 'power',
+        label: 'Power',
+        items: [
+          'Extension cords (3+)',
+          'Power strips (2+)',
+          'Surge protectors',
+          'Headset charging cables',
+          'Laptop chargers'
+        ]
+      },
+      {
+        group: 'network',
+        label: 'Network',
+        items: [
+          'Wireless router',
+          'Ethernet cables (5+)',
+          'Mobile hotspot (backup)',
+          'Network switch'
+        ]
+      },
+      {
+        group: 'vr_equipment',
+        label: 'VR Equipment',
+        items: [
+          'VR headsets (all assigned units)',
+          'Controllers (paired and tested)',
+          'Charging cables (USB-C)',
+          'Headset carrying cases',
+          'Lens cleaning wipes / cloths',
+          'Replacement face gaskets'
+        ]
+      },
+      {
+        group: 'facilitation',
+        label: 'Facilitation',
+        items: [
+          'Facilitator laptop',
+          'Projector + HDMI cable',
+          'Portable speakers',
+          'Printed participant guides',
+          'Sign-in sheets',
+          'Feedback forms'
+        ]
       }
-      html += '</div>';
+    ];
+
+    // ── Helpers ──
+
+    function $(sel) { return document.querySelector(sel); }
+    function $$(sel) { return document.querySelectorAll(sel); }
+
+    function esc(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
-  }
 
-  document.getElementById('panel-checklist').innerHTML = html;
+    function toast(message, type = 'success') {
+      const container = $('#toast-container');
+      const el = document.createElement('div');
+      el.className = `toast toast-${type}`;
+      el.textContent = message;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
 
-  document.getElementById('checklist-deploy-select')?.addEventListener('change', (e) => {
-    selectedDeployId = e.target.value || null;
-    renderChecklist();
-  });
+    function formatDate(iso) {
+      if (!iso) return '--';
+      const d = new Date(iso + (iso.includes('T') ? '' : 'T12:00:00'));
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
 
-  document.querySelectorAll('#panel-checklist input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const item = cb.dataset.item;
-      const checklists = getChecklists();
-      if (!checklists[selectedDeployId]) checklists[selectedDeployId] = {};
-      checklists[selectedDeployId][item] = cb.checked;
-      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklists));
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function todayStr() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function statusClass(status) {
+      return 'status-' + (status || '').toLowerCase().replace(/\s+/g, '-');
+    }
+
+    function conditionClass(condition) {
+      return 'condition-' + (condition || '').toLowerCase();
+    }
+
+    function typeClass(type) {
+      return 'type-' + (type || '').toLowerCase().replace(/\s+/g, '-');
+    }
+
+    function getChecklists() {
+      try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}'); }
+      catch { return {}; }
+    }
+
+    function saveChecklists(data) {
+      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(data));
+    }
+
+    // ── Data Loading ──
+
+    function loadAll() {
+      allDevices     = getDevices();
+      allDeployments = getDeployments();
+      allMaintenance = getMaintenanceLogs();
+
+      deviceMap = {};
+      allDevices.forEach(d => deviceMap[d.id] = d);
+
+      updateStats();
+      populateDeviceDropdowns();
+      populateDeploymentDropdowns();
+      renderDevices();
+      renderDeployments();
       renderChecklist();
-    });
-  });
-}
-
-function getChecklists() {
-  try { return JSON.parse(localStorage.getItem(CHECKLIST_KEY) || '{}'); } catch { return {}; }
-}
-
-/* ── MAINTENANCE ────────────────────────────── */
-function renderMaintenance() {
-  const logs = getMaintenanceLogs();
-  const devices = getDevices();
-  const filtered = maintFilter === 'All' ? logs : logs.filter(l => l.status === maintFilter);
-
-  const statuses = ['All', 'Open', 'In Progress', 'Resolved'];
-
-  let html = `
-    <div class="toolbar">
-      <div class="filter-bar">
-        ${statuses.map(s => `<button class="filter-btn${s === maintFilter ? ' active' : ''}" data-mfilter="${s}">${s}</button>`).join('')}
-      </div>
-      <button class="btn-amber" onclick="window._openMaintModal()">+ Add Entry</button>
-    </div>
-  `;
-
-  if (filtered.length === 0) {
-    html += '<div class="empty-msg">No maintenance entries found.</div>';
-  } else {
-    html += `<div class="table-wrap"><table class="ops-table">
-      <thead><tr>
-        <th>Date</th><th>Device</th><th>Issue</th><th>Description</th><th>Status</th><th>Resolved By</th><th></th>
-      </tr></thead><tbody>`;
-    for (const l of filtered) {
-      const dev = devices.find(d => d.id === l.device_id);
-      const date = l.created_at ? new Date(l.created_at).toLocaleDateString() : '';
-      html += `<tr>
-        <td style="font-family:'Share Tech Mono',monospace;font-size:0.72rem">${date}</td>
-        <td style="font-weight:500;color:var(--ink)">${esc(dev?.name || l.device_name || '—')}</td>
-        <td>${esc(l.issue_type)}</td>
-        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.description)}">${esc(l.description)}</td>
-        <td><span class="${badgeClass(l.status)}">${esc(l.status)}</span></td>
-        <td>${esc(l.resolved_by)}</td>
-        <td class="col-actions">
-          <button onclick="window._editMaint('${l.id}')" title="Edit">&#9998;</button>
-          <button class="del" onclick="window._deleteMaint('${l.id}')" title="Delete">&#10005;</button>
-        </td>
-      </tr>`;
+      renderMaintenance();
     }
-    html += '</tbody></table></div>';
-  }
 
-  document.getElementById('panel-maintenance').innerHTML = html;
+    function updateStats() {
+      const total = allDevices.length;
+      const ready = allDevices.filter(d => d.status === 'Ready').length;
+      const inUse = allDevices.filter(d => d.status === 'In Use').length;
+      const attention = allDevices.filter(d => d.status === 'Maintenance' || d.condition === 'Poor').length;
 
-  document.querySelectorAll('#panel-maintenance .filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => { maintFilter = btn.dataset.mfilter; renderMaintenance(); });
-  });
-}
+      $('#stat-total').textContent = total;
+      $('#stat-ready').textContent = ready;
+      $('#stat-in-use').textContent = inUse;
+      $('#stat-attention').textContent = attention;
 
-/* ── MODAL HELPERS ──────────────────────────── */
-window.closeModal = (id) => document.getElementById(id)?.classList.remove('open');
+      $('#tab-count-inventory').textContent = total;
+      $('#tab-count-deployments').textContent = allDeployments.length;
+      const openMaint = allMaintenance.filter(m => m.status !== 'Resolved').length;
+      $('#tab-count-maintenance').textContent = openMaint || allMaintenance.length;
+    }
 
-window._openDeviceModal = (device) => {
-  document.getElementById('device-modal-title').textContent = device ? 'Edit Device' : 'Add Device';
-  document.getElementById('dm_id').value = device?.id || '';
-  document.getElementById('dm_name').value = device?.name || '';
-  document.getElementById('dm_type').value = device?.type || 'Quest 3';
-  document.getElementById('dm_serial').value = device?.serial || '';
-  document.getElementById('dm_status').value = device?.status || 'Ready';
-  document.getElementById('dm_condition').value = device?.condition || 'Good';
-  document.getElementById('dm_checked').value = device?.last_checked || todayStr();
-  document.getElementById('dm_notes').value = device?.notes || '';
-  document.getElementById('device-modal').classList.add('open');
-};
+    function populateDeviceDropdowns() {
+      const options = allDevices.map(d =>
+        `<option value="${esc(d.id)}">${esc(d.name)}</option>`
+      ).join('');
+      $('#maint-device').innerHTML = '<option value="">-- Select device --</option>' + options;
+      $('#maint-device-filter').innerHTML = '<option value="">All Devices</option>' + options;
+    }
 
-window._editDevice = (id) => {
-  const d = getDevices().find(x => x.id === id);
-  if (d) window._openDeviceModal(d);
-};
+    function populateDeploymentDropdowns() {
+      const active = allDeployments
+        .filter(d => d.status !== 'Cancelled' && d.status !== 'Completed')
+        .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      const options = active.map(d =>
+        `<option value="${esc(d.id)}">${esc(formatDate(d.date))} — ${esc(d.location)}</option>`
+      ).join('');
+      const current = $('#checklist-deployment').value;
+      $('#checklist-deployment').innerHTML = '<option value="">-- Select a deployment --</option>' + options;
+      if (current) $('#checklist-deployment').value = current;
+    }
 
-window._deleteDevice = (id) => {
-  if (confirm('Delete this device?')) { deleteDevice(id); renderInventory(); }
-};
+    // ══════════════════════════════════════════════════
+    //  INVENTORY TAB
+    // ══════════════════════════════════════════════════
 
-window.saveDeviceForm = () => {
-  const device = {
-    id: document.getElementById('dm_id').value || undefined,
-    name: document.getElementById('dm_name').value.trim(),
-    type: document.getElementById('dm_type').value,
-    serial: document.getElementById('dm_serial').value.trim(),
-    status: document.getElementById('dm_status').value,
-    condition: document.getElementById('dm_condition').value,
-    last_checked: document.getElementById('dm_checked').value,
-    notes: document.getElementById('dm_notes').value.trim(),
-  };
-  if (!device.name) return alert('Device name is required.');
-  saveDevice(device);
-  closeModal('device-modal');
-  renderInventory();
-};
+    function getFilteredDevices() {
+      const search = ($('#device-search').value || '').toLowerCase();
+      const typeFilter = $('#device-type-filter').value;
+      const statusBtn = $('#device-status-filters .status-filter-btn.active');
+      const statusFilter = statusBtn ? statusBtn.dataset.filter : '';
 
-window._openDeployModal = (dep) => {
-  document.getElementById('deploy-modal-title').textContent = dep ? 'Edit Deployment' : 'Add Deployment';
-  document.getElementById('dep_id').value = dep?.id || '';
-  document.getElementById('dep_date').value = dep?.date || todayStr();
-  document.getElementById('dep_location').value = dep?.location || '';
-  document.getElementById('dep_org').value = dep?.organization || '';
-  document.getElementById('dep_contact').value = dep?.contact_person || '';
-  document.getElementById('dep_headsets').value = dep?.headsets_needed ?? 4;
-  document.getElementById('dep_status').value = dep?.status || 'Scheduled';
-  document.getElementById('dep_notes').value = dep?.notes || '';
-  document.getElementById('deploy-modal').classList.add('open');
-};
+      return allDevices.filter(d => {
+        if (search) {
+          const text = `${d.name} ${d.serial} ${d.notes}`.toLowerCase();
+          if (!text.includes(search)) return false;
+        }
+        if (typeFilter && d.type !== typeFilter) return false;
+        if (statusFilter && d.status !== statusFilter) return false;
+        return true;
+      });
+    }
 
-window._editDeploy = (id) => {
-  const d = getDeployments().find(x => x.id === id);
-  if (d) window._openDeployModal(d);
-};
+    function renderDevices() {
+      const filtered = getFilteredDevices();
+      const container = $('#devices-content');
 
-window._deleteDeploy = (id) => {
-  if (confirm('Delete this deployment?')) { deleteDeployment(id); renderDeployments(); }
-};
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2699;</div>
+            <h3>No devices found</h3>
+            <p>${allDevices.length ? 'Try adjusting your search or filters.' : 'Add your first device to start tracking hardware inventory.'}</p>
+          </div>`;
+        return;
+      }
 
-window.saveDeployForm = () => {
-  const dep = {
-    id: document.getElementById('dep_id').value || undefined,
-    date: document.getElementById('dep_date').value,
-    location: document.getElementById('dep_location').value.trim(),
-    organization: document.getElementById('dep_org').value.trim(),
-    contact_person: document.getElementById('dep_contact').value.trim(),
-    headsets_needed: parseInt(document.getElementById('dep_headsets').value) || 0,
-    status: document.getElementById('dep_status').value,
-    notes: document.getElementById('dep_notes').value.trim(),
-  };
-  if (!dep.location) return alert('Location is required.');
-  saveDeployment(dep);
-  closeModal('deploy-modal');
-  renderDeployments();
-};
+      const rows = filtered.map(d => `
+        <tr>
+          <td>
+            <div class="device-name">${esc(d.name)}</div>
+            ${d.serial ? `<div class="device-serial">${esc(d.serial)}</div>` : ''}
+          </td>
+          <td><span class="device-type-badge ${typeClass(d.type)}">${esc(d.type)}</span></td>
+          <td><span class="status-pill ${statusClass(d.status)}">${esc(d.status)}</span></td>
+          <td><span class="condition-pill ${conditionClass(d.condition)}">${esc(d.condition)}</span></td>
+          <td><span class="last-checked-date">${formatDate(d.last_checked)}</span></td>
+          <td title="${esc(d.notes)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.notes || '')}</td>
+          <td class="actions-cell">
+            <button class="btn btn-ghost btn-sm btn-edit-device" data-id="${esc(d.id)}" title="Edit">&#x270E;</button>
+            <button class="btn btn-danger btn-sm btn-delete-device" data-id="${esc(d.id)}" title="Delete">&times;</button>
+          </td>
+        </tr>`).join('');
 
-window._openMaintModal = (entry) => {
-  document.getElementById('maint-modal-title').textContent = entry ? 'Edit Maintenance Entry' : 'Add Maintenance Entry';
-  const devices = getDevices();
-  const sel = document.getElementById('mt_device');
-  sel.innerHTML = '<option value="">— Select device —</option>' +
-    devices.map(d => `<option value="${d.id}"${entry?.device_id === d.id ? ' selected' : ''}>${esc(d.name)}</option>`).join('');
-  document.getElementById('mt_id').value = entry?.id || '';
-  document.getElementById('mt_type').value = entry?.issue_type || 'Hardware';
-  document.getElementById('mt_desc').value = entry?.description || '';
-  document.getElementById('mt_resolution').value = entry?.resolution || '';
-  document.getElementById('mt_resolved_by').value = entry?.resolved_by || '';
-  document.getElementById('mt_status').value = entry?.status || 'Open';
-  document.getElementById('maint-modal').classList.add('open');
-};
+      container.innerHTML = `
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Device</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Condition</th>
+                <th>Last Checked</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
 
-window._editMaint = (id) => {
-  const m = getMaintenanceLogs().find(x => x.id === id);
-  if (m) window._openMaintModal(m);
-};
+      container.querySelectorAll('.btn-edit-device').forEach(btn => {
+        btn.addEventListener('click', () => openEditDevice(btn.dataset.id));
+      });
 
-window._deleteMaint = (id) => {
-  if (confirm('Delete this maintenance entry?')) { deleteMaintenanceLog(id); renderMaintenance(); }
-};
+      container.querySelectorAll('.btn-delete-device').forEach(btn => {
+        btn.addEventListener('click', () => confirmDelete('device', btn.dataset.id));
+      });
+    }
 
-window.saveMaintForm = () => {
-  const devices = getDevices();
-  const deviceId = document.getElementById('mt_device').value;
-  const device = devices.find(d => d.id === deviceId);
-  const entry = {
-    id: document.getElementById('mt_id').value || undefined,
-    device_id: deviceId,
-    device_name: device?.name || '',
-    issue_type: document.getElementById('mt_type').value,
-    description: document.getElementById('mt_desc').value.trim(),
-    resolution: document.getElementById('mt_resolution').value.trim(),
-    resolved_by: document.getElementById('mt_resolved_by').value.trim(),
-    status: document.getElementById('mt_status').value,
-  };
-  if (!entry.description) return alert('Description is required.');
-  saveMaintenanceLog(entry);
-  closeModal('maint-modal');
-  renderMaintenance();
-};
+    // ── Device CRUD ──
 
-// Close modals on backdrop click
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
-});
+    function openAddDevice() {
+      $('#device-modal-title').textContent = 'Add Device';
+      $('#device-form-id').value = '';
+      $('#device-name').value = '';
+      $('#device-type').value = 'Quest 3';
+      $('#device-serial').value = '';
+      $('#device-status').value = 'Ready';
+      $('#device-condition').value = 'Excellent';
+      $('#device-last-checked').value = todayStr();
+      $('#device-notes').value = '';
+      openModal('device-modal');
+    }
 
-// Initial render
-render();
-</script>
+    function openEditDevice(id) {
+      const d = deviceMap[id];
+      if (!d) return;
+      $('#device-modal-title').textContent = 'Edit Device';
+      $('#device-form-id').value = d.id;
+      $('#device-name').value = d.name || '';
+      $('#device-type').value = d.type || 'Quest 3';
+      $('#device-serial').value = d.serial || '';
+      $('#device-status').value = d.status || 'Ready';
+      $('#device-condition').value = d.condition || 'Good';
+      $('#device-last-checked').value = d.last_checked || '';
+      $('#device-notes').value = d.notes || '';
+      openModal('device-modal');
+    }
+
+    function handleSaveDevice() {
+      const name = $('#device-name').value.trim();
+      if (!name) {
+        toast('Device name is required.', 'error');
+        return;
+      }
+
+      const existingId = $('#device-form-id').value;
+      const record = {
+        id: existingId || undefined,
+        name,
+        type: $('#device-type').value,
+        serial: $('#device-serial').value.trim(),
+        status: $('#device-status').value,
+        condition: $('#device-condition').value,
+        last_checked: $('#device-last-checked').value,
+        notes: $('#device-notes').value.trim()
+      };
+
+      saveDevice(record);
+      closeModal('device-modal');
+      toast(existingId ? 'Device updated.' : 'Device added.');
+      loadAll();
+    }
+
+    // ══════════════════════════════════════════════════
+    //  DEPLOYMENTS TAB
+    // ══════════════════════════════════════════════════
+
+    function getFilteredDeployments() {
+      const search = ($('#deploy-search').value || '').toLowerCase();
+      const statusFilter = $('#deploy-status-filter').value;
+
+      return allDeployments.filter(d => {
+        if (search) {
+          const text = `${d.location} ${d.organization} ${d.contact_person} ${d.notes}`.toLowerCase();
+          if (!text.includes(search)) return false;
+        }
+        if (statusFilter && d.status !== statusFilter) return false;
+        return true;
+      }).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    }
+
+    function renderDeployments() {
+      const filtered = getFilteredDeployments();
+      const container = $('#deployments-content');
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x26F3;</div>
+            <h3>No deployments found</h3>
+            <p>${allDeployments.length ? 'Try adjusting your search or filters.' : 'Schedule your first mobile unit deployment.'}</p>
+          </div>`;
+        return;
+      }
+
+      const today = todayStr();
+      const todayList = filtered.filter(d => d.date === today);
+      const upcomingList = filtered.filter(d => d.date > today);
+      const pastList = filtered.filter(d => d.date < today);
+
+      let html = '';
+
+      if (todayList.length) {
+        html += `<div class="deployment-section-title">Today</div>`;
+        html += '<div class="deployment-cards">' + todayList.map(renderDeploymentCard).join('') + '</div>';
+      }
+
+      if (upcomingList.length) {
+        html += `<div class="deployment-section-title">Upcoming</div>`;
+        html += '<div class="deployment-cards">' + upcomingList.map(renderDeploymentCard).join('') + '</div>';
+      }
+
+      if (pastList.length) {
+        html += `<div class="deployment-section-title">Past</div>`;
+        html += '<div class="deployment-cards">' + pastList.reverse().map(renderDeploymentCard).join('') + '</div>';
+      }
+
+      container.innerHTML = html;
+
+      container.querySelectorAll('.btn-edit-deploy').forEach(btn => {
+        btn.addEventListener('click', () => openEditDeployment(btn.dataset.id));
+      });
+
+      container.querySelectorAll('.btn-delete-deploy').forEach(btn => {
+        btn.addEventListener('click', () => confirmDelete('deployment', btn.dataset.id));
+      });
+    }
+
+    function renderDeploymentCard(d) {
+      return `
+        <div class="deployment-card">
+          <div class="deployment-card-header">
+            <div>
+              <div class="deployment-date">${formatDate(d.date)}</div>
+              <div class="deployment-location">${esc(d.location)}</div>
+            </div>
+            <span class="status-pill ${statusClass(d.status)}">${esc(d.status)}</span>
+          </div>
+          <div class="deployment-meta">
+            ${d.organization ? `<span>Org: ${esc(d.organization)}</span>` : ''}
+            ${d.contact_person ? `<span>Contact: ${esc(d.contact_person)}</span>` : ''}
+            <span>Headsets: ${d.headsets_needed || 0}</span>
+          </div>
+          ${d.notes ? `<div class="deployment-notes">${esc(d.notes)}</div>` : ''}
+          <div class="deployment-actions">
+            <button class="btn btn-ghost btn-sm btn-edit-deploy" data-id="${esc(d.id)}">Edit</button>
+            <button class="btn btn-danger btn-sm btn-delete-deploy" data-id="${esc(d.id)}">Delete</button>
+          </div>
+        </div>`;
+    }
+
+    // ── Deployment CRUD ──
+
+    function openAddDeployment() {
+      $('#deploy-modal-title').textContent = 'Add Deployment';
+      $('#deploy-form-id').value = '';
+      $('#deploy-date').value = todayStr();
+      $('#deploy-location').value = '';
+      $('#deploy-org').value = '';
+      $('#deploy-contact').value = '';
+      $('#deploy-headsets').value = '4';
+      $('#deploy-status').value = 'Scheduled';
+      $('#deploy-notes').value = '';
+      openModal('deploy-modal');
+    }
+
+    function openEditDeployment(id) {
+      const d = allDeployments.find(x => x.id === id);
+      if (!d) return;
+      $('#deploy-modal-title').textContent = 'Edit Deployment';
+      $('#deploy-form-id').value = d.id;
+      $('#deploy-date').value = d.date || '';
+      $('#deploy-location').value = d.location || '';
+      $('#deploy-org').value = d.organization || '';
+      $('#deploy-contact').value = d.contact_person || '';
+      $('#deploy-headsets').value = d.headsets_needed || 0;
+      $('#deploy-status').value = d.status || 'Scheduled';
+      $('#deploy-notes').value = d.notes || '';
+      openModal('deploy-modal');
+    }
+
+    function handleSaveDeployment() {
+      const location = $('#deploy-location').value.trim();
+      const date = $('#deploy-date').value;
+      if (!location || !date) {
+        toast('Date and location are required.', 'error');
+        return;
+      }
+
+      const existingId = $('#deploy-form-id').value;
+      const record = {
+        id: existingId || undefined,
+        date,
+        location,
+        organization: $('#deploy-org').value.trim(),
+        contact_person: $('#deploy-contact').value.trim(),
+        headsets_needed: parseInt($('#deploy-headsets').value) || 0,
+        status: $('#deploy-status').value,
+        notes: $('#deploy-notes').value.trim()
+      };
+
+      saveDeployment(record);
+      closeModal('deploy-modal');
+      toast(existingId ? 'Deployment updated.' : 'Deployment added.');
+      loadAll();
+    }
+
+    // ══════════════════════════════════════════════════
+    //  KIT CHECKLIST TAB
+    // ══════════════════════════════════════════════════
+
+    function renderChecklist() {
+      const deployId = $('#checklist-deployment').value;
+      const container = $('#checklist-content');
+      const statusEl = $('#checklist-status');
+      const printBtn = $('#btn-print-checklist');
+
+      if (!deployId) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2611;</div>
+            <h3>Select a deployment</h3>
+            <p>Choose a deployment above to view and manage its pre-deployment checklist.</p>
+          </div>`;
+        statusEl.innerHTML = '';
+        printBtn.style.display = 'none';
+        return;
+      }
+
+      const checklists = getChecklists();
+      if (!checklists[deployId]) {
+        checklists[deployId] = {};
+      }
+      const state = checklists[deployId];
+
+      // Count totals
+      let totalItems = 0;
+      let checkedItems = 0;
+      for (const group of CHECKLIST_TEMPLATE) {
+        for (const item of group.items) {
+          totalItems++;
+          if (state[item]) checkedItems++;
+        }
+      }
+
+      const allClear = checkedItems === totalItems && totalItems > 0;
+
+      statusEl.innerHTML = `
+        <div class="checklist-all-clear ${allClear ? 'clear' : 'pending'}">
+          ${allClear
+            ? '&#x2714; ALL CLEAR — Kit is ready for deployment'
+            : `&#x26A0; ${checkedItems} / ${totalItems} items checked`}
+        </div>`;
+
+      let html = '';
+      for (const group of CHECKLIST_TEMPLATE) {
+        html += `<div class="checklist-group">
+          <h3 class="checklist-group-title">${esc(group.label)}</h3>`;
+        for (const item of group.items) {
+          const checked = !!state[item];
+          html += `
+            <div class="checklist-item ${checked ? 'checked' : ''}">
+              <input type="checkbox" id="ck-${esc(group.group)}-${group.items.indexOf(item)}" data-item="${esc(item)}" ${checked ? 'checked' : ''}>
+              <label for="ck-${esc(group.group)}-${group.items.indexOf(item)}">${esc(item)}</label>
+            </div>`;
+        }
+        html += '</div>';
+      }
+
+      container.innerHTML = html;
+      printBtn.style.display = '';
+
+      // Attach checkbox listeners
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const itemName = cb.dataset.item;
+          const checklists = getChecklists();
+          if (!checklists[deployId]) checklists[deployId] = {};
+          checklists[deployId][itemName] = cb.checked;
+          saveChecklists(checklists);
+
+          // Toggle visual
+          const wrapper = cb.closest('.checklist-item');
+          wrapper.classList.toggle('checked', cb.checked);
+
+          // Re-render status
+          renderChecklistStatus(deployId);
+        });
+      });
+    }
+
+    function renderChecklistStatus(deployId) {
+      const checklists = getChecklists();
+      const state = checklists[deployId] || {};
+      const statusEl = $('#checklist-status');
+
+      let totalItems = 0;
+      let checkedItems = 0;
+      for (const group of CHECKLIST_TEMPLATE) {
+        for (const item of group.items) {
+          totalItems++;
+          if (state[item]) checkedItems++;
+        }
+      }
+
+      const allClear = checkedItems === totalItems && totalItems > 0;
+      statusEl.innerHTML = `
+        <div class="checklist-all-clear ${allClear ? 'clear' : 'pending'}">
+          ${allClear
+            ? '&#x2714; ALL CLEAR — Kit is ready for deployment'
+            : `&#x26A0; ${checkedItems} / ${totalItems} items checked`}
+        </div>`;
+    }
+
+    // ══════════════════════════════════════════════════
+    //  MAINTENANCE TAB
+    // ══════════════════════════════════════════════════
+
+    function getFilteredMaintenance() {
+      const search = ($('#maint-search').value || '').toLowerCase();
+      const statusFilter = $('#maint-status-filter').value;
+      const deviceFilter = $('#maint-device-filter').value;
+
+      return allMaintenance.filter(m => {
+        if (search) {
+          const deviceName = deviceMap[m.device_id]?.name || m.device_name || '';
+          const text = `${deviceName} ${m.description} ${m.resolution} ${m.resolved_by} ${m.issue_type}`.toLowerCase();
+          if (!text.includes(search)) return false;
+        }
+        if (statusFilter && m.status !== statusFilter) return false;
+        if (deviceFilter && m.device_id !== deviceFilter) return false;
+        return true;
+      }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    }
+
+    function renderMaintenance() {
+      const filtered = getFilteredMaintenance();
+      const container = $('#maintenance-content');
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">&#x2692;</div>
+            <h3>No maintenance logs found</h3>
+            <p>${allMaintenance.length ? 'Try adjusting your filters.' : 'Log your first maintenance issue or repair.'}</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(m => {
+        const device = deviceMap[m.device_id];
+        const deviceName = device ? device.name : (m.device_name || 'Unknown Device');
+
+        return `
+          <div class="log-card">
+            <div class="log-card-header">
+              <div style="display:flex; gap:var(--sp-2); align-items:center; flex-wrap:wrap;">
+                <span class="log-issue-type">${esc(m.issue_type)}</span>
+                <span class="status-pill ${statusClass(m.status)}">${esc(m.status)}</span>
+              </div>
+              <span class="log-date">${formatDate(m.created_at)}</span>
+            </div>
+            <div class="log-device">${esc(deviceName)}</div>
+            <div class="log-description">${esc(m.description)}</div>
+            ${m.resolution ? `<div class="log-resolution"><strong>Resolution:</strong> ${esc(m.resolution)}</div>` : ''}
+            <div class="log-footer">
+              <span>${m.resolved_by ? `Resolved by: ${esc(m.resolved_by)}` : ''}</span>
+              <div class="actions-cell">
+                <button class="btn btn-ghost btn-sm btn-edit-maint" data-id="${esc(m.id)}">Edit</button>
+                <button class="btn btn-danger btn-sm btn-delete-maint" data-id="${esc(m.id)}">Delete</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      container.querySelectorAll('.btn-edit-maint').forEach(btn => {
+        btn.addEventListener('click', () => openEditMaintenance(btn.dataset.id));
+      });
+
+      container.querySelectorAll('.btn-delete-maint').forEach(btn => {
+        btn.addEventListener('click', () => confirmDelete('maintenance', btn.dataset.id));
+      });
+    }
+
+    // ── Maintenance CRUD ──
+
+    function openAddMaintenance() {
+      $('#maint-modal-title').textContent = 'Log Maintenance Issue';
+      $('#maint-form-id').value = '';
+      $('#maint-device').value = '';
+      $('#maint-date').value = todayStr();
+      $('#maint-issue-type').value = 'Hardware';
+      $('#maint-status').value = 'Open';
+      $('#maint-description').value = '';
+      $('#maint-resolution').value = '';
+      $('#maint-resolved-by').value = '';
+      openModal('maint-modal');
+    }
+
+    function openEditMaintenance(id) {
+      const m = allMaintenance.find(x => x.id === id);
+      if (!m) return;
+      $('#maint-modal-title').textContent = 'Edit Maintenance Entry';
+      $('#maint-form-id').value = m.id;
+      $('#maint-device').value = m.device_id || '';
+      $('#maint-date').value = (m.created_at || '').slice(0, 10);
+      $('#maint-issue-type').value = m.issue_type || 'Hardware';
+      $('#maint-status').value = m.status || 'Open';
+      $('#maint-description').value = m.description || '';
+      $('#maint-resolution').value = m.resolution || '';
+      $('#maint-resolved-by').value = m.resolved_by || '';
+      openModal('maint-modal');
+    }
+
+    function handleSaveMaintenance() {
+      const deviceId = $('#maint-device').value;
+      const description = $('#maint-description').value.trim();
+      if (!deviceId || !description) {
+        toast('Device and description are required.', 'error');
+        return;
+      }
+
+      const existingId = $('#maint-form-id').value;
+      const device = deviceMap[deviceId];
+
+      const record = {
+        id: existingId || undefined,
+        device_id: deviceId,
+        device_name: device?.name || '',
+        issue_type: $('#maint-issue-type').value,
+        description,
+        resolution: $('#maint-resolution').value.trim(),
+        resolved_by: $('#maint-resolved-by').value.trim(),
+        status: $('#maint-status').value
+      };
+
+      saveMaintenanceLog(record);
+      closeModal('maint-modal');
+      toast(existingId ? 'Maintenance entry updated.' : 'Issue logged.');
+      loadAll();
+    }
+
+    // ══════════════════════════════════════════════════
+    //  DELETE CONFIRMATION
+    // ══════════════════════════════════════════════════
+
+    function confirmDelete(type, id) {
+      const labels = { device: 'device', deployment: 'deployment', maintenance: 'maintenance entry' };
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-box">
+          <h3>Delete ${labels[type]}?</h3>
+          <p>This action cannot be undone.</p>
+          <div class="confirm-actions">
+            <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+            <button class="btn btn-danger" id="confirm-yes">Delete</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#confirm-cancel').addEventListener('click', () => overlay.remove());
+      overlay.querySelector('#confirm-yes').addEventListener('click', () => {
+        overlay.remove();
+        performDelete(type, id);
+      });
+    }
+
+    function performDelete(type, id) {
+      if (type === 'device') {
+        deleteDevice(id);
+        toast('Device deleted.');
+      } else if (type === 'deployment') {
+        deleteDeployment(id);
+        // Also clean up associated checklist
+        const checklists = getChecklists();
+        if (checklists[id]) {
+          delete checklists[id];
+          saveChecklists(checklists);
+        }
+        toast('Deployment deleted.');
+      } else if (type === 'maintenance') {
+        deleteMaintenanceLog(id);
+        toast('Maintenance entry deleted.');
+      }
+      loadAll();
+    }
+
+    // ══════════════════════════════════════════════════
+    //  TAB NAVIGATION
+    // ══════════════════════════════════════════════════
+
+    $$('.ops-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        $$('.ops-tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        $$('.ops-panel').forEach(p => p.classList.remove('active'));
+
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        $(`#panel-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    // ══════════════════════════════════════════════════
+    //  EVENT WIRING
+    // ══════════════════════════════════════════════════
+
+    // ── Status filter buttons (Inventory) ──
+    $$('#device-status-filters .status-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $$('#device-status-filters .status-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderDevices();
+      });
+    });
+
+    // ── Search/filter inputs (debounced) ──
+    let deviceSearchTimer;
+    $('#device-search').addEventListener('input', () => {
+      clearTimeout(deviceSearchTimer);
+      deviceSearchTimer = setTimeout(renderDevices, 200);
+    });
+    $('#device-type-filter').addEventListener('change', renderDevices);
+
+    let deploySearchTimer;
+    $('#deploy-search').addEventListener('input', () => {
+      clearTimeout(deploySearchTimer);
+      deploySearchTimer = setTimeout(renderDeployments, 200);
+    });
+    $('#deploy-status-filter').addEventListener('change', renderDeployments);
+
+    let maintSearchTimer;
+    $('#maint-search').addEventListener('input', () => {
+      clearTimeout(maintSearchTimer);
+      maintSearchTimer = setTimeout(renderMaintenance, 200);
+    });
+    $('#maint-status-filter').addEventListener('change', renderMaintenance);
+    $('#maint-device-filter').addEventListener('change', renderMaintenance);
+
+    // ── Checklist deployment selector ──
+    $('#checklist-deployment').addEventListener('change', renderChecklist);
+
+    // ── Add buttons ──
+    $('#btn-add-device').addEventListener('click', openAddDevice);
+    $('#btn-add-deploy').addEventListener('click', openAddDeployment);
+    $('#btn-add-maint').addEventListener('click', openAddMaintenance);
+
+    // ── Save buttons ──
+    $('#btn-save-device').addEventListener('click', handleSaveDevice);
+    $('#btn-save-deploy').addEventListener('click', handleSaveDeployment);
+    $('#btn-save-maint').addEventListener('click', handleSaveMaintenance);
+
+    // ── Print button ──
+    $('#btn-print-checklist').addEventListener('click', () => window.print());
+
+    // ── Modal close buttons ──
+    $$('[data-close]').forEach(btn => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    // ── Close modal on overlay click ──
+    $$('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) overlay.classList.remove('open');
+      });
+    });
+
+    // ── Close modals on Escape ──
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        $$('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+        document.querySelectorAll('.confirm-overlay').forEach(c => c.remove());
+      }
+    });
+
+    // ══════════════════════════════════════════════════
+    //  INIT
+    // ══════════════════════════════════════════════════
+
+    loadAll();
+  </script>
 </body>
 </html>
