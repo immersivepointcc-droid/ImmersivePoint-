@@ -244,7 +244,9 @@ server.listen(PORT, () => {
   console.log('  ║                                              ║');
   console.log('  ║  Cast Hub:  /cast/                           ║');
   if (localIP) {
-    console.log(`  ║  Headset:   http://${localIP}:${PORT}/cast/#join=CODE ║`);
+    const autoUrl = `http://${localIP}:${PORT}/cast/#auto`;
+    console.log(`  ║  Auto-Join: ${autoUrl.padEnd(33)}║`);
+    console.log('  ║  (Set as headset browser homepage)           ║');
   }
   console.log('  ╚══════════════════════════════════════════════╝');
   console.log('');
