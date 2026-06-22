@@ -851,6 +851,10 @@
         <span id="peer-count">0</span> connected
       </span>
     </div>
+    <div class="cast-header-right" style="display:flex;gap:var(--sp-2);align-items:center;">
+      <a href="/overlay/" target="_blank" class="btn btn-ghost btn-sm" title="Open OBS Broadcast Overlay">&#x1F4FA; Broadcast Overlay</a>
+      <a href="/mobile-ops/" class="btn btn-ghost btn-sm" title="Manage device fleet">&#x2699; Fleet Mgmt</a>
+    </div>
   </div>
 
   <!-- Room code -->
@@ -930,6 +934,12 @@
         <div class="how-to-step-text">
           The headset's screen will appear in the grid above. Use the <strong>fullscreen</strong> button on any feed to expand it.
         </div>
+      </div>
+    </div>
+    <div class="how-to-compat" style="margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);background:rgba(123,47,190,0.06);border:1px solid rgba(123,47,190,0.15);border-radius:var(--radius-md);margin-bottom:var(--sp-4);">
+      <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--purple-glow);letter-spacing:0.1em;margin-bottom:var(--sp-2);">AUTO-CONNECT MODE</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--ink-dim);line-height:1.6;">
+        Set headset browser homepage to <strong style="color:var(--cyan-glow);" id="auto-connect-url"></strong> — headsets will auto-discover the active room and start casting on power-on. No room code needed.
       </div>
     </div>
     <div class="how-to-compat" style="margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);background:rgba(0,180,216,0.06);border:1px solid rgba(0,180,216,0.15);border-radius:var(--radius-md);">
@@ -1080,6 +1090,11 @@ async function initFacilitatorView() {
   const howToUrl = document.getElementById('how-to-url');
   if (howToUrl) {
     howToUrl.textContent = IS_LOCAL ? `${location.host}/cast/#join=CODE` : 'ipcast.netlify.app/CODE';
+  }
+
+  const autoConnectUrl = document.getElementById('auto-connect-url');
+  if (autoConnectUrl) {
+    autoConnectUrl.textContent = `${location.host}/cast/#auto`;
   }
 
   // Copy buttons
