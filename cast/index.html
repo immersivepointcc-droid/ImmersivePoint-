@@ -1385,6 +1385,9 @@ const PEER_CONFIG = (() => {
   };
 })();
 
+let peerRetryCount = 0;
+const MAX_PEER_RETRIES = 5;
+
 function initFacilitatorPeer(roomCode) {
   const peerId = `ip-cast-${roomCode}`;
   let peer;
@@ -1392,12 +1395,21 @@ function initFacilitatorPeer(roomCode) {
   try {
     peer = new Peer(peerId, PEER_CONFIG);
   } catch (err) {
-    showFacilitatorError('Failed to initialize PeerJS. The signaling server may be unavailable.');
+    peerRetryCount++;
+    if (peerRetryCount <= MAX_PEER_RETRIES) {
+      const delay = Math.min(2000 * peerRetryCount, 8000);
+      showFacilitatorError(`PeerJS signaling server unavailable. Retrying in ${delay / 1000}s... (${peerRetryCount}/${MAX_PEER_RETRIES})`);
+      setTimeout(() => initFacilitatorPeer(roomCode), delay);
+    } else {
+      showFacilitatorError('Cannot connect to PeerJS signaling server. Make sure the ImmersivePoint server is running, then refresh the page.');
+    }
     return;
   }
 
   peer.on('open', () => {
+    peerRetryCount = 0;
     console.log('[Cast Hub] Facilitator peer open:', peerId);
+    clearFacilitatorError();
 
     // Register active room with server
     fetch('/api/cast/room', {
@@ -1410,17 +1422,24 @@ function initFacilitatorPeer(roomCode) {
   peer.on('error', (err) => {
     console.error('[Cast Hub] Peer error:', err);
     if (err.type === 'unavailable-id') {
-      // Room code collision — generate a new one
       const newCode = generateRoomCode();
       sessionStorage.setItem('ip_cast_room_code', newCode);
       document.getElementById('room-code').textContent = newCode;
       showFacilitatorError(`Room code was already in use. New code: ${newCode}. Reloading...`);
       setTimeout(() => location.reload(), 2000);
     } else if (err.type === 'network' || err.type === 'server-error') {
-      showFacilitatorError('Cannot reach the PeerJS signaling server. Check your internet connection and try refreshing.');
+      peerRetryCount++;
+      if (peerRetryCount <= MAX_PEER_RETRIES) {
+        const delay = Math.min(2000 * peerRetryCount, 8000);
+        showFacilitatorError(`Signaling server unreachable. Retrying in ${delay / 1000}s... (${peerRetryCount}/${MAX_PEER_RETRIES})`);
+        if (peer && !peer.destroyed) { try { peer.destroy(); } catch (e) {} }
+        setTimeout(() => initFacilitatorPeer(roomCode), delay);
+      } else {
+        showFacilitatorError('Cannot reach the PeerJS signaling server. Make sure the ImmersivePoint server is running, then refresh the page.');
+      }
     } else if (err.type === 'disconnected') {
-      showFacilitatorError('Lost connection to signaling server. Attempting to reconnect...');
-      setTimeout(() => peer.reconnect(), 3000);
+      showFacilitatorError('Lost connection to signaling server. Reconnecting...');
+      setTimeout(() => { if (!peer.destroyed) peer.reconnect(); }, 3000);
     }
   });
 
@@ -1479,7 +1498,6 @@ function initFacilitatorPeer(roomCode) {
 }
 
 function showFacilitatorError(msg) {
-  // Insert error message above video grid
   const grid = document.getElementById('video-grid');
   let errEl = document.getElementById('facilitator-error');
   if (!errEl) {
@@ -1491,6 +1509,11 @@ function showFacilitatorError(msg) {
   }
   errEl.textContent = msg;
   errEl.style.display = '';
+}
+
+function clearFacilitatorError() {
+  const errEl = document.getElementById('facilitator-error');
+  if (errEl) errEl.style.display = 'none';
 }
 
 function addFeedCard(peerId, name, stream, mediaConn, deviceInfo) {
