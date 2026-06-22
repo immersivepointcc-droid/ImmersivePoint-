@@ -1814,27 +1814,24 @@ async function collectTelemetry() {
 
 /* ---- Session Tracking ---- */
 
-let currentSessionId = null;
 let sessionStartTime = null;
 
 function reportSessionStart(peerId, url) {
-  currentSessionId = Date.now().toString(36);
   sessionStartTime = Date.now();
   fetch('/api/sessions/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ peerId, sessionId: currentSessionId, url: url || location.href, timestamp: new Date().toISOString() })
+    body: JSON.stringify({ peerId, url: url || location.href, timestamp: new Date().toISOString() })
   }).catch(() => {});
 }
 
 function reportSessionEnd(peerId, url, startTime) {
-  const duration = Date.now() - (startTime || sessionStartTime || Date.now());
+  const duration = startTime ? Date.now() - startTime : 0;
   fetch('/api/sessions/end', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ peerId, sessionId: currentSessionId, url: url || location.href, timestamp: new Date().toISOString(), duration })
+    body: JSON.stringify({ peerId, url: url || location.href, timestamp: new Date().toISOString(), duration })
   }).catch(() => {});
-  currentSessionId = null;
   sessionStartTime = null;
 }
 
@@ -1848,40 +1845,25 @@ window.addEventListener('beforeunload', () => {
 
 async function captureAndSendScreenshot() {
   try {
-    // Look for a local stream in the sender view's scope via the preview video element
-    const previewVideo = document.getElementById('sender-preview-video');
-    if (previewVideo && previewVideo.srcObject) {
-      const videoTrack = previewVideo.srcObject.getVideoTracks()[0];
-      if (videoTrack) {
-        const imageCapture = new ImageCapture(videoTrack);
-        const bitmap = await imageCapture.grabFrame();
-        const canvas = document.createElement('canvas');
-        canvas.width = bitmap.width;
-        canvas.height = bitmap.height;
-        canvas.getContext('2d').drawImage(bitmap, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-
-        // Store in localStorage for Cast Hub to pick up
-        const captures = JSON.parse(localStorage.getItem('ip_cast_captures') || '[]');
-        captures.unshift({
-          id: Date.now().toString(36),
-          type: 'screenshot',
-          name: 'MDM Remote Capture',
-          timestamp: new Date().toISOString(),
-          dataUrl
-        });
-        localStorage.setItem('ip_cast_captures', JSON.stringify(captures));
-      }
+    const video = document.querySelector('#sender-preview-video');
+    if (video && video.srcObject) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      const captures = JSON.parse(localStorage.getItem('ip_cast_captures') || '[]');
+      captures.unshift({ id: Date.now().toString(36), type: 'screenshot', name: 'MDM Remote Capture', timestamp: new Date().toISOString(), dataUrl });
+      localStorage.setItem('ip_cast_captures', JSON.stringify(captures));
     }
-  } catch (e) {
-    console.error('[MDM] Screenshot capture failed:', e);
-  }
+  } catch (e) { console.error('[MDM] Screenshot failed:', e); }
 }
 
 /* ---- Enhanced Heartbeat & Registration with Telemetry ---- */
 
 function startDeviceHeartbeat(peerId) {
-  return setInterval(async () => {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(async () => {
     const telemetry = await collectTelemetry();
     fetch('/api/devices/heartbeat', {
       method: 'POST',
@@ -2004,8 +1986,7 @@ function initSenderView(roomCode) {
 
       // Register device and start heartbeat
       registerDevice(myPeerId, senderName, devType);
-      if (heartbeatInterval) clearInterval(heartbeatInterval);
-      heartbeatInterval = startDeviceHeartbeat(myPeerId);
+      startDeviceHeartbeat(myPeerId);
 
       // Update MDM polling to use the real peer ID (for auto-connect clients)
       if (window.location.hash === '#auto') {
@@ -2216,114 +2197,57 @@ function executeCommand(cmd) {
 
 function enterKioskMode(payload) {
   isKioskLocked = true;
-
-  // Prevent back navigation
-  history.pushState(null, '', location.href);
-  window.addEventListener('popstate', kioskPopstateHandler);
-
   let overlay = document.getElementById('kiosk-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'kiosk-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#0D1B2A;display:flex;flex-direction:column;align-items:center;justify-content:center;';
-
-    const deviceLabel = (payload?.deviceName) || detectDeviceType();
-    const policyLabel = (payload?.policyName) || 'Default Policy';
-
-    overlay.innerHTML = `
-      <div style="text-align:center;padding:2rem;">
-        <div id="kiosk-title" style="font-family:Orbitron,sans-serif;font-size:1.5rem;color:#00D4FF;margin-bottom:0.5rem;cursor:default;user-select:none;">KIOSK MODE</div>
-        <div style="font-family:'Share Tech Mono',monospace;color:#556688;font-size:0.75rem;margin-bottom:1rem;">${deviceLabel} &mdash; ${policyLabel}</div>
-        <div id="kiosk-message" style="font-family:'Share Tech Mono',monospace;color:#8892B0;font-size:1rem;">This device is managed by ImmersivePoint</div>
-        <div id="kiosk-iframe-wrap" style="width:100vw;height:80vh;margin-top:1rem;display:none;"></div>
-        <div id="kiosk-pin-entry" style="display:none;margin-top:1.5rem;">
-          <input id="kiosk-pin-input" type="password" maxlength="10" placeholder="Enter PIN"
-            style="background:#1A2744;border:1px solid #00D4FF;color:#CCD6F6;padding:0.5rem 1rem;border-radius:4px;font-family:'Share Tech Mono',monospace;font-size:1rem;text-align:center;width:160px;" />
-          <button id="kiosk-pin-submit"
-            style="background:#00D4FF;color:#0D1B2A;border:none;padding:0.5rem 1rem;border-radius:4px;font-family:Orbitron,sans-serif;font-size:0.85rem;margin-left:0.5rem;cursor:pointer;">Unlock</button>
-        </div>
-      </div>
-      <div id="kiosk-status-bar" style="position:fixed;bottom:0;left:0;right:0;height:24px;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:0.65rem;font-family:'Share Tech Mono',monospace;color:#8892B0;z-index:100000;">
-        <span id="kiosk-device-info">Managed Device</span>
-        <span id="kiosk-battery-info"></span>
-      </div>
-    `;
+    overlay.innerHTML = '<div style="text-align:center;padding:2rem;">' +
+      '<div style="font-family:Orbitron,sans-serif;font-size:1.5rem;color:#00D4FF;margin-bottom:1rem;">KIOSK MODE</div>' +
+      '<div id="kiosk-message" style="font-family:Share Tech Mono,monospace;color:#8892B0;font-size:1rem;">This device is managed by ImmersivePoint</div>' +
+      '<div id="kiosk-iframe-wrap" style="width:100vw;height:80vh;margin-top:1rem;display:none;"></div>' +
+      '</div>' +
+      '<div id="kiosk-status-bar" style="position:fixed;bottom:0;left:0;right:0;height:24px;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:0.65rem;font-family:Share Tech Mono,monospace;color:#8892B0;z-index:100000;">' +
+      '<span id="kiosk-device-info">Managed Device</span>' +
+      '<span id="kiosk-battery-info"></span>' +
+      '</div>';
     document.body.appendChild(overlay);
-
-    // Admin unlock: triple-tap on KIOSK MODE title
-    let tapCount = 0;
-    let tapTimer = null;
-    const kioskTitle = document.getElementById('kiosk-title');
-    kioskTitle.addEventListener('click', () => {
-      tapCount++;
-      if (tapTimer) clearTimeout(tapTimer);
-      tapTimer = setTimeout(() => { tapCount = 0; }, 800);
-      if (tapCount >= 3) {
-        tapCount = 0;
-        const pinEntry = document.getElementById('kiosk-pin-entry');
-        pinEntry.style.display = pinEntry.style.display === 'none' ? 'block' : 'none';
-        if (pinEntry.style.display === 'block') {
-          document.getElementById('kiosk-pin-input').value = '';
-          document.getElementById('kiosk-pin-input').focus();
-        }
-      }
-    });
-
-    const pinSubmitBtn = document.getElementById('kiosk-pin-submit');
-    const pinInput = document.getElementById('kiosk-pin-input');
-    function tryUnlockPin() {
-      const pin = pinInput.value;
-      const expectedPin = (currentPolicy && currentPolicy.kioskPin) ? currentPolicy.kioskPin : '1234';
-      if (pin === expectedPin) {
-        exitKioskMode();
-      } else {
-        pinInput.value = '';
-        pinInput.style.borderColor = '#FF4444';
-        setTimeout(() => { pinInput.style.borderColor = '#00D4FF'; }, 1000);
-      }
-    }
-    pinSubmitBtn.addEventListener('click', tryUnlockPin);
-    pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlockPin(); });
   }
   overlay.style.display = 'flex';
 
-  // Update device info label
-  const deviceInfoEl = document.getElementById('kiosk-device-info');
-  if (deviceInfoEl) {
-    deviceInfoEl.textContent = (payload?.deviceName || detectDeviceType()) + ' | ' + (payload?.policyName || 'Managed');
-  }
+  const deviceInfo = document.getElementById('kiosk-device-info');
+  if (deviceInfo) deviceInfo.textContent = detectDeviceType() + ' · Managed by ImmersivePoint';
 
   if (payload?.url) {
     const wrap = document.getElementById('kiosk-iframe-wrap');
-    wrap.innerHTML = `<iframe src="${payload.url}" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe>`;
+    wrap.innerHTML = '<iframe src="' + payload.url + '" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe>';
     wrap.style.display = 'block';
+    const msg = document.getElementById('kiosk-message');
+    if (msg) msg.style.display = 'none';
   }
 
-  // Start periodic battery/status updates on the kiosk status bar
-  if (!window._kioskStatusInterval) {
-    window._kioskStatusInterval = setInterval(async () => {
-      if (isKioskLocked) {
-        const t = await collectTelemetry();
-        const batteryEl = document.getElementById('kiosk-battery-info');
-        if (batteryEl && t.batteryLevel !== undefined) {
-          batteryEl.textContent = t.batteryLevel + '% ' + (t.batteryCharging ? '(charging)' : '') +
-            (t.connectionType ? ' | ' + t.connectionType : '');
-        }
-      }
-    }, 30000);
-    // Run once immediately
-    collectTelemetry().then(t => {
-      const batteryEl = document.getElementById('kiosk-battery-info');
-      if (batteryEl && t.batteryLevel !== undefined) {
-        batteryEl.textContent = t.batteryLevel + '% ' + (t.batteryCharging ? '(charging)' : '') +
-          (t.connectionType ? ' | ' + t.connectionType : '');
-      }
-    });
+  // Prevent back navigation
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', kioskPopstateHandler);
+
+  // Update battery in status bar periodically
+  updateKioskBattery();
+  if (!window._kioskBatteryInterval) {
+    window._kioskBatteryInterval = setInterval(updateKioskBattery, 30000);
   }
 }
 
 function kioskPopstateHandler() {
-  history.pushState(null, '', location.href);
+  if (isKioskLocked) history.pushState(null, '', location.href);
+}
+
+async function updateKioskBattery() {
+  if (!isKioskLocked) return;
+  const t = await collectTelemetry();
+  const el = document.getElementById('kiosk-battery-info');
+  if (el && t.batteryLevel !== undefined) {
+    el.textContent = 'Battery: ' + t.batteryLevel + '%' + (t.batteryCharging ? ' (charging)' : '');
+  }
 }
 
 function exitKioskMode() {
@@ -2331,9 +2255,9 @@ function exitKioskMode() {
   const overlay = document.getElementById('kiosk-overlay');
   if (overlay) overlay.style.display = 'none';
   window.removeEventListener('popstate', kioskPopstateHandler);
-  if (window._kioskStatusInterval) {
-    clearInterval(window._kioskStatusInterval);
-    window._kioskStatusInterval = null;
+  if (window._kioskBatteryInterval) {
+    clearInterval(window._kioskBatteryInterval);
+    window._kioskBatteryInterval = null;
   }
 }
 
