@@ -1033,6 +1033,8 @@ const isSenderMode = !!joinCode;
 
 if (isSenderMode) {
   initSenderView(joinCode);
+} else if (location.hash === '#auto') {
+  initAutoConnect();
 } else {
   initFacilitatorView();
 }
@@ -1185,6 +1187,13 @@ function initFacilitatorPeer(roomCode) {
 
   peer.on('open', () => {
     console.log('[Cast Hub] Facilitator peer open:', peerId);
+
+    // Register active room with server
+    fetch('/api/cast/room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: roomCode, facilitatorPeerId: peerId })
+    }).catch(() => {});
   });
 
   peer.on('error', (err) => {
@@ -1214,16 +1223,22 @@ function initFacilitatorPeer(roomCode) {
   // Handle incoming calls
   peer.on('call', (mediaConn) => {
     const callerPeerId = mediaConn.peer;
-    const peerName = mediaConn.metadata?.name || 'Unknown Headset';
+    const meta = mediaConn.metadata || {};
+    const peerName = meta.name || 'Unknown Headset';
+    const deviceInfo = {
+      deviceId: meta.deviceId || null,
+      deviceType: meta.deviceType || null,
+      serial: meta.serial || null
+    };
 
-    console.log('[Cast Hub] Incoming call from:', callerPeerId, 'name:', peerName);
+    console.log('[Cast Hub] Incoming call from:', callerPeerId, 'name:', peerName, 'device:', deviceInfo);
 
     // Answer the call (no stream to send back)
     mediaConn.answer();
 
     mediaConn.on('stream', (remoteStream) => {
       console.log('[Cast Hub] Received stream from:', peerName);
-      addFeedCard(callerPeerId, peerName, remoteStream, mediaConn);
+      addFeedCard(callerPeerId, peerName, remoteStream, mediaConn, deviceInfo);
     });
 
     mediaConn.on('close', () => {
@@ -1267,7 +1282,7 @@ function showFacilitatorError(msg) {
   errEl.style.display = '';
 }
 
-function addFeedCard(peerId, name, stream, mediaConn) {
+function addFeedCard(peerId, name, stream, mediaConn, deviceInfo) {
   // Hide empty state
   const emptyState = document.getElementById('empty-state');
   if (emptyState) emptyState.style.display = 'none';
@@ -1409,7 +1424,7 @@ function addFeedCard(peerId, name, stream, mediaConn) {
   });
 
   // Track the peer
-  activePeers.set(peerId, { mediaConn, stream, name, element: card, stopRecording: () => { if (recorder && recorder.state === 'recording') stopRecording(); } });
+  activePeers.set(peerId, { mediaConn, stream, name, element: card, deviceInfo: deviceInfo || null, stopRecording: () => { if (recorder && recorder.state === 'recording') stopRecording(); } });
   setPeerCount(activePeers.size);
 
   // Monitor stream end
@@ -1745,6 +1760,31 @@ function openLightbox(src, type) {
    SENDER / HEADSET VIEW
    ================================================================ */
 
+function detectDeviceType() {
+  const ua = navigator.userAgent;
+  if (/Quest/i.test(ua)) return 'Quest 3';
+  if (/Vive|Focus/i.test(ua)) return 'Vive Focus 3';
+  return 'VR Headset';
+}
+
+function startDeviceHeartbeat(peerId) {
+  return setInterval(() => {
+    fetch('/api/devices/heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ peerId })
+    }).catch(() => {});
+  }, 10000);
+}
+
+function registerDevice(peerId, name, type) {
+  fetch('/api/devices/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ peerId, name, type })
+  }).catch(() => {});
+}
+
 function initSenderView(roomCode) {
   document.getElementById('sender-view').style.display = '';
   document.getElementById('sender-room-code').textContent = roomCode;
@@ -1763,6 +1803,7 @@ function initSenderView(roomCode) {
   let localStream = null;
   let reconnectTimer = null;
   let stopped = false;
+  let heartbeatInterval = null;
 
   function setStatus(state, text) {
     statusWrap.style.display = '';
@@ -1844,9 +1885,15 @@ function initSenderView(roomCode) {
     peer.on('open', (myPeerId) => {
       console.log('[Cast Sender] Peer open:', myPeerId);
       const facilitatorPeerId = `ip-cast-${roomCode}`;
+      const devType = detectDeviceType();
+
+      // Register device and start heartbeat
+      registerDevice(myPeerId, senderName, devType);
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      heartbeatInterval = startDeviceHeartbeat(myPeerId);
 
       mediaConn = peer.call(facilitatorPeerId, localStream, {
-        metadata: { name: senderName },
+        metadata: { name: senderName, deviceType: devType },
       });
 
       if (!mediaConn) {
@@ -1942,6 +1989,7 @@ function initSenderView(roomCode) {
   function cleanup(fullStop) {
     stopped = !!fullStop;
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
 
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
@@ -1962,6 +2010,77 @@ function initSenderView(roomCode) {
 
   // Auto-start casting on page load
   startCasting();
+}
+
+/* ================================================================
+   AUTO-CONNECT MODE (#auto)
+   ================================================================ */
+
+function initAutoConnect() {
+  const senderView = document.getElementById('sender-view');
+  senderView.style.display = '';
+
+  const senderCard = senderView.querySelector('.sender-card');
+  const roomCodeEl = document.getElementById('sender-room-code');
+  const statusWrap = document.getElementById('sender-status');
+  const statusDot = document.getElementById('sender-status-dot');
+  const statusText = document.getElementById('sender-status-text');
+
+  // Show waiting state
+  senderCard.querySelector('h2').textContent = 'Auto-Connect';
+  roomCodeEl.textContent = '---';
+  statusWrap.style.display = '';
+  statusDot.className = 'status-dot status-dot-pending';
+  statusText.innerHTML = '<span style="display:inline-flex;align-items:center;gap:var(--sp-2);">' +
+    '<span class="auto-connect-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-glow);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>' +
+    'Waiting for Cast Hub...</span>';
+
+  // Add spinner keyframes if not already present
+  if (!document.getElementById('auto-connect-spin-style')) {
+    const style = document.createElement('style');
+    style.id = 'auto-connect-spin-style';
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+  }
+
+  // Detect device type
+  const deviceType = detectDeviceType();
+  const nameInput = document.getElementById('sender-name');
+  nameInput.value = deviceType;
+
+  // Poll for active room
+  let pollTimer = null;
+
+  async function checkForRoom() {
+    try {
+      const res = await fetch('/api/cast/room');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.code) {
+          // Room found — stop polling and connect
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          console.log('[Auto-Connect] Found active room:', data.code);
+          roomCodeEl.textContent = data.code;
+          senderCard.querySelector('h2').textContent = 'Cast to Hub';
+          statusDot.className = 'status-dot status-dot-pending';
+          statusText.textContent = 'Connecting...';
+          initSenderView(data.code);
+          return;
+        }
+      }
+    } catch {
+      // Server not reachable, keep polling
+    }
+    // Still waiting — update status
+    statusDot.className = 'status-dot status-dot-pending';
+    statusText.innerHTML = '<span style="display:inline-flex;align-items:center;gap:var(--sp-2);">' +
+      '<span class="auto-connect-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-glow);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>' +
+      'Waiting for Cast Hub...</span>';
+  }
+
+  // Initial check, then poll every 5 seconds
+  checkForRoom();
+  pollTimer = setInterval(checkForRoom, 5000);
 }
 </script>
 </body>
