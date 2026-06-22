@@ -65,6 +65,19 @@ function resolveFile(urlPath) {
 // ── In-memory device registry & room state ──────────────────────────
 const deviceRegistry = new Map(); // peerId -> { id, name, type, peerId, status, lastSeen, roomCode }
 let activeRoom = null; // { code, facilitatorPeerId, createdAt }
+const devicePolicies = new Map(); // policyId -> { id, name, kioskUrl, allowNavigation, autoLaunch, refreshInterval, whitelist }
+const commandQueue = new Map(); // peerId -> [{ id, command, payload, createdAt }]
+
+devicePolicies.set('default', {
+  id: 'default',
+  name: 'Auto-Connect',
+  kioskUrl: null,
+  allowNavigation: true,
+  autoLaunch: true,
+  refreshInterval: 0,
+  whitelist: [],
+  createdAt: new Date().toISOString()
+});
 
 function readBody(req) {
   return new Promise((resolve) => {
@@ -127,7 +140,7 @@ const server = http.createServer(async (req, res) => {
     // POST /api/devices/register — headset registers itself
     if (urlPath === '/api/devices/register' && method === 'POST') {
       const body = await readBody(req);
-      const { peerId, name, type, serial, deviceId } = body;
+      const { peerId, name, type, serial, deviceId, policyId } = body;
       if (!peerId) return jsonResponse(res, { error: 'peerId is required' }, 400);
       deviceRegistry.set(peerId, {
         id: deviceId || peerId,
@@ -138,6 +151,7 @@ const server = http.createServer(async (req, res) => {
         status: 'online',
         lastSeen: Date.now(),
         roomCode: null,
+        policyId: policyId || 'default',
       });
       return jsonResponse(res, { ok: true, peerId });
     }
@@ -175,6 +189,111 @@ const server = http.createServer(async (req, res) => {
     if (urlPath === '/api/cast/room' && method === 'DELETE') {
       activeRoom = null;
       return jsonResponse(res, { ok: true });
+    }
+
+    // ── MDM Policy & Command routes ──────────────────────────────────
+
+    // GET /api/policies — list all policies
+    if (urlPath === '/api/policies' && method === 'GET') {
+      return jsonResponse(res, [...devicePolicies.values()]);
+    }
+
+    // POST /api/policies — create or update a policy
+    if (urlPath === '/api/policies' && method === 'POST') {
+      const body = await readBody(req);
+      const id = body.id || Date.now().toString(36);
+      const policy = {
+        id,
+        name: body.name || 'Untitled Policy',
+        kioskUrl: body.kioskUrl || null,
+        allowNavigation: body.allowNavigation !== undefined ? body.allowNavigation : true,
+        autoLaunch: body.autoLaunch !== undefined ? body.autoLaunch : true,
+        refreshInterval: body.refreshInterval || 0,
+        whitelist: body.whitelist || [],
+        createdAt: devicePolicies.has(id) ? devicePolicies.get(id).createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      devicePolicies.set(id, policy);
+      return jsonResponse(res, policy);
+    }
+
+    // POST /api/fleet/command — broadcast command to all online devices
+    if (urlPath === '/api/fleet/command' && method === 'POST') {
+      const body = await readBody(req);
+      const { command, payload } = body;
+      const validCommands = ['navigate', 'refresh', 'lock', 'unlock', 'restart', 'set-policy', 'message'];
+      if (!command || !validCommands.includes(command)) {
+        return jsonResponse(res, { error: 'Invalid command. Valid: ' + validCommands.join(', ') }, 400);
+      }
+      const now = Date.now();
+      let count = 0;
+      for (const [peerId] of deviceRegistry) {
+        const cmdEntry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), command, payload: payload || null, createdAt: new Date().toISOString() };
+        if (!commandQueue.has(peerId)) commandQueue.set(peerId, []);
+        commandQueue.get(peerId).push(cmdEntry);
+        count++;
+      }
+      return jsonResponse(res, { ok: true, devicesQueued: count });
+    }
+
+    // Routes with path parameters (regex matching)
+    const deviceCmdMatch = urlPath.match(/^\/api\/devices\/([^/]+)\/command$/);
+    const deviceCmdsMatch = urlPath.match(/^\/api\/devices\/([^/]+)\/commands$/);
+    const devicePolicyMatch = urlPath.match(/^\/api\/devices\/([^/]+)\/policy$/);
+    const policyDeleteMatch = urlPath.match(/^\/api\/policies\/([^/]+)$/);
+
+    // DELETE /api/policies/:id — delete a policy
+    if (policyDeleteMatch && method === 'DELETE') {
+      const policyId = policyDeleteMatch[1];
+      if (policyId === 'default') {
+        return jsonResponse(res, { error: 'Cannot delete the default policy' }, 400);
+      }
+      if (!devicePolicies.has(policyId)) {
+        return jsonResponse(res, { error: 'Policy not found' }, 404);
+      }
+      devicePolicies.delete(policyId);
+      return jsonResponse(res, { ok: true });
+    }
+
+    // POST /api/devices/:peerId/command — queue a command for a device
+    if (deviceCmdMatch && method === 'POST') {
+      const peerId = deviceCmdMatch[1];
+      const body = await readBody(req);
+      const { command, payload } = body;
+      const validCommands = ['navigate', 'refresh', 'lock', 'unlock', 'restart', 'set-policy', 'message'];
+      if (!command || !validCommands.includes(command)) {
+        return jsonResponse(res, { error: 'Invalid command. Valid: ' + validCommands.join(', ') }, 400);
+      }
+      const cmdEntry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), command, payload: payload || null, createdAt: new Date().toISOString() };
+      if (!commandQueue.has(peerId)) commandQueue.set(peerId, []);
+      commandQueue.get(peerId).push(cmdEntry);
+      return jsonResponse(res, { ok: true, commandId: cmdEntry.id });
+    }
+
+    // GET /api/devices/:peerId/commands — retrieve and drain pending commands
+    if (deviceCmdsMatch && method === 'GET') {
+      const peerId = deviceCmdsMatch[1];
+      const commands = commandQueue.get(peerId) || [];
+      commandQueue.delete(peerId);
+      return jsonResponse(res, commands);
+    }
+
+    // POST /api/devices/:peerId/policy — assign a policy to a device
+    if (devicePolicyMatch && method === 'POST') {
+      const peerId = devicePolicyMatch[1];
+      const body = await readBody(req);
+      const { policyId } = body;
+      if (!policyId) return jsonResponse(res, { error: 'policyId is required' }, 400);
+      const policy = devicePolicies.get(policyId);
+      if (!policy) return jsonResponse(res, { error: 'Policy not found' }, 404);
+      const dev = deviceRegistry.get(peerId);
+      if (!dev) return jsonResponse(res, { error: 'Device not found' }, 404);
+      dev.policyId = policyId;
+      // Also queue a set-policy command with the full policy as payload
+      const cmdEntry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), command: 'set-policy', payload: policy, createdAt: new Date().toISOString() };
+      if (!commandQueue.has(peerId)) commandQueue.set(peerId, []);
+      commandQueue.get(peerId).push(cmdEntry);
+      return jsonResponse(res, { ok: true, policyId });
     }
 
     // Unknown API route
@@ -242,6 +361,7 @@ server.listen(PORT, () => {
   }
   console.log(`  ║  PeerJS:    ws://localhost:${PEER_PORT}/peer           ║`);
   console.log('  ║                                              ║');
+  console.log('  ║  MDM API:   /api/devices, /api/policies     ║');
   console.log('  ║  Cast Hub:  /cast/                           ║');
   if (localIP) {
     const autoUrl = `http://${localIP}:${PORT}/cast/#auto`;
