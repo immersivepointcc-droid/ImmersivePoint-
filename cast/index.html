@@ -2114,6 +2114,11 @@ function initSenderView(roomCode) {
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
 
+    // Report session end if a session was active
+    if (mdmPeerId && sessionStartTime) {
+      reportSessionEnd(mdmPeerId, location.href, sessionStartTime);
+    }
+
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
       localStream = null;
