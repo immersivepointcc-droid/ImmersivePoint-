@@ -878,6 +878,132 @@
       }
     }
 
+    /* ── MDM / Device Management ── */
+
+    .mdm-fleet-bar {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4);
+      margin-bottom: var(--sp-6);
+    }
+    .mdm-fleet-bar h3 {
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      color: var(--amber);
+      margin: 0 0 var(--sp-3) 0;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .mdm-fleet-actions {
+      display: flex;
+      gap: var(--sp-2);
+      flex-wrap: wrap;
+    }
+    .mdm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--sp-4);
+      margin-bottom: var(--sp-6);
+    }
+    .mdm-device-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4);
+      transition: border-color 0.2s;
+    }
+    .mdm-device-card.online {
+      border-color: #10B981;
+    }
+    .mdm-device-card-header {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      margin-bottom: var(--sp-3);
+    }
+    .mdm-device-card-name {
+      font-family: var(--font-heading);
+      font-size: 0.95rem;
+      color: var(--ink);
+    }
+    .mdm-device-card-type {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--ink-dim);
+    }
+    .mdm-device-card-policy {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--amber);
+      margin-bottom: var(--sp-2);
+    }
+    .mdm-device-card-actions {
+      display: flex;
+      gap: var(--sp-1);
+      flex-wrap: wrap;
+      margin-top: var(--sp-3);
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+    }
+    .mdm-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--sp-4);
+    }
+    .mdm-section-header h3 {
+      font-family: var(--font-heading);
+      font-size: 0.9rem;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0;
+    }
+    .mdm-policies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--sp-4);
+    }
+    .mdm-policy-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-4);
+    }
+    .mdm-policy-card-name {
+      font-family: var(--font-heading);
+      font-size: 1rem;
+      color: var(--ink);
+      margin-bottom: var(--sp-2);
+    }
+    .mdm-policy-card-url {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--cyan);
+      margin-bottom: var(--sp-2);
+      word-break: break-all;
+    }
+    .mdm-policy-card-settings {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--ink-dim);
+      margin-bottom: var(--sp-3);
+    }
+    .mdm-policy-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: var(--sp-3);
+      border-top: 1px solid var(--border);
+    }
+    .mdm-empty {
+      text-align: center;
+      padding: var(--sp-8);
+      color: var(--ink-dim);
+      font-family: var(--font-mono);
+    }
+
     /* ── Print ── */
 
     @media print {
@@ -958,6 +1084,9 @@
     </button>
     <button class="ops-tab" data-tab="maintenance" role="tab" aria-selected="false">
       Maintenance <span class="tab-count" id="tab-count-maintenance">0</span>
+    </button>
+    <button class="ops-tab" data-tab="mdm" role="tab" aria-selected="false">
+      &#x1F512; Device Mgmt <span class="tab-count" id="tab-count-mdm">0</span>
     </button>
   </div>
 
@@ -1055,6 +1184,131 @@
         <div class="empty-state-icon">&#x2692;</div>
         <h3>No maintenance logs</h3>
         <p>Log your first maintenance issue or repair.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DEVICE MANAGEMENT (MDM) PANEL ═══════════════ -->
+  <div class="ops-panel" id="panel-mdm" role="tabpanel">
+    <div class="mdm-fleet-bar">
+      <h3>Fleet Control</h3>
+      <div class="mdm-fleet-actions">
+        <button class="btn btn-primary btn-sm" id="btn-fleet-refresh">&#x21BB; Refresh All</button>
+        <button class="btn btn-ghost btn-sm" id="btn-fleet-navigate">Navigate All</button>
+        <button class="btn btn-ghost btn-sm" id="btn-fleet-message">Message All</button>
+        <button class="btn btn-danger btn-sm" id="btn-fleet-lock">Lock All</button>
+        <button class="btn btn-ghost btn-sm" id="btn-fleet-unlock">Unlock All</button>
+      </div>
+    </div>
+    <div id="mdm-devices-grid" class="mdm-grid">
+      <!-- Populated by JS -->
+    </div>
+    <div class="mdm-policies-section">
+      <div class="mdm-section-header">
+        <h3>Device Policies</h3>
+        <button class="btn btn-primary btn-sm" id="btn-add-policy">+ New Policy</button>
+      </div>
+      <div id="mdm-policies-list" class="mdm-policies-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ POLICY MODAL ═══════════════ -->
+  <div class="modal-overlay" id="policy-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="policy-modal-title">New Policy</h2>
+        <button class="modal-close" data-close="policy-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="policy-form-id" />
+        <div class="form-group">
+          <label class="form-label">Policy Name</label>
+          <input type="text" class="input" id="policy-name" placeholder="e.g., Spark Session" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kiosk URL (leave blank for free navigation)</label>
+          <input type="url" class="input" id="policy-kiosk-url" placeholder="http://192.168.1.x:3000/spark/" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Allow Navigation</label>
+            <select class="select" id="policy-allow-nav">
+              <option value="true">Yes</option>
+              <option value="false">No — Lock to kiosk URL</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Auto-Launch on Connect</label>
+            <select class="select" id="policy-auto-launch">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auto-Refresh Interval (seconds, 0 = off)</label>
+          <input type="number" class="input" id="policy-refresh-interval" value="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">URL Whitelist (one per line, leave blank for all)</label>
+          <textarea class="input" id="policy-whitelist" rows="3" placeholder="/spark/&#10;/passport/&#10;/cast/"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="policy-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-policy">Save Policy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ NAVIGATE MODAL ═══════════════ -->
+  <div class="modal-overlay" id="navigate-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Navigate Device</h2>
+        <button class="modal-close" data-close="navigate-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="navigate-target" value="fleet" />
+        <div class="form-group">
+          <label class="form-label">URL</label>
+          <input type="url" class="input" id="navigate-url" placeholder="http://192.168.1.x:3000/spark/" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quick Links</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm mdm-quick-link" data-url="/spark/">Spark</button>
+            <button class="btn btn-ghost btn-sm mdm-quick-link" data-url="/passport/">Passport</button>
+            <button class="btn btn-ghost btn-sm mdm-quick-link" data-url="/cast/#auto">Cast</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="navigate-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-send-navigate">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ MESSAGE MODAL ═══════════════ -->
+  <div class="modal-overlay" id="message-modal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h2>Send Message</h2>
+        <button class="modal-close" data-close="message-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="message-target" value="fleet" />
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <textarea class="input" id="message-text" rows="3" placeholder="Message to display on headset(s)..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="message-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-send-message">Send</button>
       </div>
     </div>
   </div>
@@ -1290,6 +1544,7 @@
     let allMaintenance  = [];
     let deviceMap       = {};
     let liveDevices     = []; // from /api/devices
+    let allPolicies     = []; // from /api/policies
 
     // ── Checklist Template ──
     const CHECKLIST_TEMPLATE = [
@@ -2073,6 +2328,12 @@
             : '<span class="conn-offline"><span class="conn-dot offline"></span>Offline</span>';
         }
       });
+
+      // Also refresh MDM device grid if the MDM tab is active
+      const mdmPanel = document.getElementById('panel-mdm');
+      if (mdmPanel && mdmPanel.classList.contains('active')) {
+        renderMDMDevices();
+      }
     }
 
     // ══════════════════════════════════════════════════
@@ -2200,6 +2461,246 @@
     }
 
     // ══════════════════════════════════════════════════
+    //  DEVICE MANAGEMENT (MDM) TAB
+    // ══════════════════════════════════════════════════
+
+    async function loadMDMData() {
+      try {
+        const res = await fetch('/api/policies');
+        if (res.ok) allPolicies = await res.json();
+      } catch {}
+      renderMDMDevices();
+      renderPolicies();
+    }
+
+    function renderMDMDevices() {
+      const grid = $('#mdm-devices-grid');
+      if (!grid) return;
+
+      const allMdmDevices = [...liveDevices];
+
+      if (!allMdmDevices.length) {
+        grid.innerHTML = '<div class="mdm-empty">No devices registered. Power on headsets with auto-connect to see them here.</div>';
+        $('#tab-count-mdm').textContent = '0';
+        return;
+      }
+
+      $('#tab-count-mdm').textContent = allMdmDevices.length;
+
+      grid.innerHTML = allMdmDevices.map(d => {
+        const isOnline = d.status === 'online';
+        const policy = allPolicies.find(p => p.id === d.policyId) || allPolicies.find(p => p.id === 'default');
+        const policyName = policy ? policy.name : 'None';
+        const lastSeen = d.lastSeen ? new Date(d.lastSeen).toLocaleTimeString() : 'Never';
+
+        return `
+          <div class="mdm-device-card ${isOnline ? 'online' : ''}">
+            <div class="mdm-device-card-header">
+              <span class="conn-dot ${isOnline ? 'online' : 'offline'}"></span>
+              <div>
+                <div class="mdm-device-card-name">${esc(d.name || 'Unknown')}</div>
+                <div class="mdm-device-card-type">${esc(d.type || 'headset')} ${d.serial ? '&middot; ' + esc(d.serial) : ''}</div>
+              </div>
+            </div>
+            <div class="mdm-device-card-policy">Policy: ${esc(policyName)}</div>
+            <div style="font-size:0.7rem;color:var(--ink-faint);font-family:var(--font-mono);">Last seen: ${lastSeen}</div>
+            <div class="mdm-device-card-actions">
+              <button class="btn btn-ghost btn-sm" onclick="window._mdm.navigate('${esc(d.peerId)}')">Navigate</button>
+              <button class="btn btn-ghost btn-sm" onclick="window._mdm.message('${esc(d.peerId)}')">Message</button>
+              <button class="btn btn-ghost btn-sm" onclick="window._mdm.refresh('${esc(d.peerId)}')">Refresh</button>
+              <button class="btn btn-ghost btn-sm" onclick="window._mdm.setPolicy('${esc(d.peerId)}')">Policy</button>
+              ${isOnline ? `<button class="btn btn-danger btn-sm" onclick="window._mdm.lock('${esc(d.peerId)}')">Lock</button>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderPolicies() {
+      const container = $('#mdm-policies-list');
+      if (!container) return;
+
+      if (!allPolicies.length) {
+        container.innerHTML = '<div class="mdm-empty">No policies created yet.</div>';
+        return;
+      }
+
+      container.innerHTML = allPolicies.map(p => {
+        const deviceCount = liveDevices.filter(d => d.policyId === p.id).length;
+        return `
+          <div class="mdm-policy-card">
+            <div class="mdm-policy-card-name">${esc(p.name)}</div>
+            <div class="mdm-policy-card-url">${p.kioskUrl ? esc(p.kioskUrl) : 'Free navigation'}</div>
+            <div class="mdm-policy-card-settings">
+              Navigation: ${p.allowNavigation ? 'Allowed' : 'Locked'} &middot;
+              Auto-launch: ${p.autoLaunch ? 'Yes' : 'No'}
+              ${p.refreshInterval ? ' &middot; Refresh: ' + p.refreshInterval + 's' : ''}
+            </div>
+            <div class="mdm-policy-card-footer">
+              <span style="font-size:0.72rem;color:var(--ink-dim);font-family:var(--font-mono);">${deviceCount} device${deviceCount !== 1 ? 's' : ''}</span>
+              <div style="display:flex;gap:var(--sp-1);">
+                ${p.id !== 'default' ? `<button class="btn btn-ghost btn-sm" onclick="window._mdm.editPolicy('${esc(p.id)}')">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="window._mdm.deletePolicy('${esc(p.id)}')">Delete</button>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Fleet commands
+    async function sendFleetCommand(command, payload) {
+      try {
+        await fetch('/api/fleet/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, payload })
+        });
+        toast('Command sent to all devices.');
+      } catch { toast('Failed to send command.', 'error'); }
+    }
+
+    async function sendDeviceCommand(peerId, command, payload) {
+      try {
+        await fetch(`/api/devices/${encodeURIComponent(peerId)}/command`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, payload })
+        });
+        toast('Command sent.');
+      } catch { toast('Failed to send command.', 'error'); }
+    }
+
+    // Individual device actions
+    function mdmNavigate(peerId) {
+      $('#navigate-target').value = peerId;
+      openModal('navigate-modal');
+    }
+
+    function mdmMessage(peerId) {
+      $('#message-target').value = peerId;
+      openModal('message-modal');
+    }
+
+    function mdmRefresh(peerId) {
+      sendDeviceCommand(peerId, 'refresh');
+    }
+
+    function mdmLock(peerId) {
+      sendDeviceCommand(peerId, 'lock');
+    }
+
+    function mdmSetPolicy(peerId) {
+      const policyOptions = allPolicies.map(p =>
+        `<button class="btn btn-ghost btn-sm" onclick="window._mdm.assignPolicy('${esc(peerId)}','${esc(p.id)}')" style="margin:4px;">${esc(p.name)}</button>`
+      ).join('');
+
+      let picker = document.getElementById('policy-picker-popup');
+      if (picker) picker.remove();
+      picker = document.createElement('div');
+      picker.id = 'policy-picker-popup';
+      picker.className = 'modal-overlay open';
+      picker.innerHTML = `
+        <div class="modal" style="max-width:400px;">
+          <div class="modal-header">
+            <h2>Assign Policy</h2>
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+          </div>
+          <div class="modal-body" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+            ${policyOptions || '<div class="mdm-empty">No policies available. Create one first.</div>'}
+          </div>
+        </div>`;
+      document.body.appendChild(picker);
+      picker.addEventListener('click', (e) => { if (e.target === picker) picker.remove(); });
+    }
+
+    async function assignPolicy(peerId, policyId) {
+      try {
+        await fetch(`/api/devices/${encodeURIComponent(peerId)}/policy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ policyId })
+        });
+        toast('Policy assigned.');
+        const picker = document.getElementById('policy-picker-popup');
+        if (picker) picker.remove();
+        loadMDMData();
+      } catch { toast('Failed to assign policy.', 'error'); }
+    }
+
+    // Policy CRUD
+    function openAddPolicy() {
+      $('#policy-modal-title').textContent = 'New Policy';
+      $('#policy-form-id').value = '';
+      $('#policy-name').value = '';
+      $('#policy-kiosk-url').value = '';
+      $('#policy-allow-nav').value = 'true';
+      $('#policy-auto-launch').value = 'true';
+      $('#policy-refresh-interval').value = '0';
+      $('#policy-whitelist').value = '';
+      openModal('policy-modal');
+    }
+
+    function editPolicy(id) {
+      const p = allPolicies.find(x => x.id === id);
+      if (!p) return;
+      $('#policy-modal-title').textContent = 'Edit Policy';
+      $('#policy-form-id').value = p.id;
+      $('#policy-name').value = p.name || '';
+      $('#policy-kiosk-url').value = p.kioskUrl || '';
+      $('#policy-allow-nav').value = String(p.allowNavigation !== false);
+      $('#policy-auto-launch').value = String(p.autoLaunch !== false);
+      $('#policy-refresh-interval').value = p.refreshInterval || 0;
+      $('#policy-whitelist').value = (p.whitelist || []).join('\n');
+      openModal('policy-modal');
+    }
+
+    async function handleSavePolicy() {
+      const name = $('#policy-name').value.trim();
+      if (!name) { toast('Policy name is required.', 'error'); return; }
+
+      const body = {
+        id: $('#policy-form-id').value || undefined,
+        name,
+        kioskUrl: $('#policy-kiosk-url').value.trim() || null,
+        allowNavigation: $('#policy-allow-nav').value === 'true',
+        autoLaunch: $('#policy-auto-launch').value === 'true',
+        refreshInterval: parseInt($('#policy-refresh-interval').value) || 0,
+        whitelist: $('#policy-whitelist').value.split('\n').map(s => s.trim()).filter(Boolean)
+      };
+
+      try {
+        await fetch('/api/policies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        closeModal('policy-modal');
+        toast(body.id ? 'Policy updated.' : 'Policy created.');
+        loadMDMData();
+      } catch { toast('Failed to save policy.', 'error'); }
+    }
+
+    async function deletePolicy(id) {
+      if (!confirm('Delete this policy?')) return;
+      try {
+        await fetch(`/api/policies/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        toast('Policy deleted.');
+        loadMDMData();
+      } catch { toast('Failed to delete policy.', 'error'); }
+    }
+
+    // Expose MDM actions globally for onclick handlers in rendered HTML
+    window._mdm = {
+      navigate: mdmNavigate,
+      message: mdmMessage,
+      refresh: mdmRefresh,
+      lock: mdmLock,
+      setPolicy: mdmSetPolicy,
+      assignPolicy: assignPolicy,
+      editPolicy: editPolicy,
+      deletePolicy: deletePolicy
+    };
+
+    // ══════════════════════════════════════════════════
     //  TAB NAVIGATION
     // ══════════════════════════════════════════════════
 
@@ -2214,6 +2715,11 @@
         tab.classList.add('active');
         tab.setAttribute('aria-selected', 'true');
         $(`#panel-${tab.dataset.tab}`).classList.add('active');
+
+        // Load MDM data when switching to the Device Mgmt tab
+        if (tab.dataset.tab === 'mdm') {
+          loadMDMData();
+        }
       });
     });
 
@@ -2269,6 +2775,58 @@
     // ── Scan Network ──
     $('#btn-scan-network').addEventListener('click', handleScanNetwork);
     $('#btn-import-scanned').addEventListener('click', handleImportScanned);
+
+    // ── MDM Fleet commands ──
+    $('#btn-fleet-refresh')?.addEventListener('click', () => sendFleetCommand('refresh'));
+    $('#btn-fleet-lock')?.addEventListener('click', () => sendFleetCommand('lock'));
+    $('#btn-fleet-unlock')?.addEventListener('click', () => sendFleetCommand('unlock'));
+    $('#btn-fleet-navigate')?.addEventListener('click', () => {
+      $('#navigate-target').value = 'fleet';
+      openModal('navigate-modal');
+    });
+    $('#btn-fleet-message')?.addEventListener('click', () => {
+      $('#message-target').value = 'fleet';
+      openModal('message-modal');
+    });
+
+    // ── Navigate modal ──
+    $('#btn-send-navigate')?.addEventListener('click', async () => {
+      const url = $('#navigate-url').value.trim();
+      if (!url) { toast('Enter a URL.', 'error'); return; }
+      const target = $('#navigate-target').value;
+      if (target === 'fleet') {
+        await sendFleetCommand('navigate', { url });
+      } else {
+        await sendDeviceCommand(target, 'navigate', { url });
+      }
+      closeModal('navigate-modal');
+      $('#navigate-url').value = '';
+    });
+
+    // ── Quick links ──
+    document.querySelectorAll('.mdm-quick-link').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $('#navigate-url').value = btn.dataset.url;
+      });
+    });
+
+    // ── Message modal ──
+    $('#btn-send-message')?.addEventListener('click', async () => {
+      const text = $('#message-text').value.trim();
+      if (!text) { toast('Enter a message.', 'error'); return; }
+      const target = $('#message-target').value;
+      if (target === 'fleet') {
+        await sendFleetCommand('message', { text });
+      } else {
+        await sendDeviceCommand(target, 'message', { text });
+      }
+      closeModal('message-modal');
+      $('#message-text').value = '';
+    });
+
+    // ── Policy modal ──
+    $('#btn-add-policy')?.addEventListener('click', openAddPolicy);
+    $('#btn-save-policy')?.addEventListener('click', handleSavePolicy);
 
     // ── Print button ──
     $('#btn-print-checklist').addEventListener('click', () => window.print());
