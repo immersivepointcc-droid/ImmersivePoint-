@@ -38,6 +38,7 @@ const SPA_ROUTES = [
   '/mobile-ops/',
   '/cast/',
   '/j/',
+  '/overlay/',
 ];
 
 function resolveFile(urlPath) {
@@ -78,6 +79,23 @@ const alertRules = []; // [{ id, name, type, threshold, enabled, lastTriggered }
 const activeAlerts = []; // [{ id, ruleId, deviceId, deviceName, message, severity, timestamp, acknowledged }]
 const scheduledCommands = []; // [{ id, command, payload, targetType, targetId, scheduledAt, executed, createdAt }]
 const sessions = []; // [{ id, peerId, deviceName, url, startedAt, endedAt, duration }]
+
+// ── Overlay state (OBS SSE) ────────────────────────────────────────
+const overlayData = {
+  players: new Map(),
+  scoreboard: { title: '', teams: [], clock: '', status: 'idle' },
+  activity: new Map(),
+  lastUpdate: Date.now()
+};
+const sseClients = new Set();
+
+function broadcastOverlay(type, payload) {
+  overlayData.lastUpdate = Date.now();
+  const msg = 'data: ' + JSON.stringify({ type, payload, ts: Date.now() }) + '\n\n';
+  for (const client of sseClients) {
+    try { client.write(msg); } catch { sseClients.delete(client); }
+  }
+}
 
 // ── Default policy ──────────────────────────────────────────────────
 devicePolicies.set('default', {
@@ -285,6 +303,13 @@ setInterval(() => {
     }
   }
 }, 10_000);
+
+// ── SSE heartbeat ──────────────────────────────────────────────────
+setInterval(() => {
+  for (const client of sseClients) {
+    try { client.write(':\n\n'); } catch { sseClients.delete(client); }
+  }
+}, 15000);
 
 // ── HTTP Server ─────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
@@ -803,6 +828,94 @@ const server = http.createServer(async (req, res) => {
       return jsonResponse(res, { ok: true });
     }
 
+    // ── Overlay API (OBS SSE) ───────────────────────────────────────
+
+    // GET /api/overlay/state — return full overlay state
+    if (urlPath === '/api/overlay/state' && method === 'GET') {
+      return jsonResponse(res, {
+        players: [...overlayData.players.values()],
+        scoreboard: overlayData.scoreboard,
+        activity: [...overlayData.activity.values()],
+        lastUpdate: overlayData.lastUpdate
+      });
+    }
+
+    // GET /api/overlay/events — SSE stream
+    if (urlPath === '/api/overlay/events' && method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.write(':\n\n');
+      sseClients.add(res);
+      req.on('close', () => sseClients.delete(res));
+      return;
+    }
+
+    // POST /api/overlay/scores — CV pipeline pushes player scores
+    if (urlPath === '/api/overlay/scores' && method === 'POST') {
+      const body = await readBody(req);
+      const players = body.players || [];
+      for (const p of players) {
+        if (!p.peerId) continue;
+        const dev = deviceRegistry.get(p.peerId);
+        const existing = overlayData.players.get(p.peerId) || {};
+        overlayData.players.set(p.peerId, {
+          ...existing,
+          peerId: p.peerId,
+          name: p.name || existing.name || (dev ? dev.name : 'Unknown'),
+          headsetType: p.headsetType || existing.headsetType || (dev ? dev.type : 'VR Headset'),
+          score: p.score !== undefined ? p.score : (existing.score || 0),
+          kills: p.kills !== undefined ? p.kills : (existing.kills || 0),
+          deaths: p.deaths !== undefined ? p.deaths : (existing.deaths || 0),
+          assists: p.assists !== undefined ? p.assists : (existing.assists || 0),
+          team: p.team || existing.team || '',
+          avatar: p.avatar || existing.avatar || '',
+          lastUpdate: Date.now()
+        });
+      }
+      broadcastOverlay('scores', [...overlayData.players.values()]);
+      return jsonResponse(res, { ok: true, playerCount: overlayData.players.size });
+    }
+
+    // POST /api/overlay/activity — CV pipeline pushes action intensity
+    if (urlPath === '/api/overlay/activity' && method === 'POST') {
+      const body = await readBody(req);
+      if (!body.peerId) return jsonResponse(res, { error: 'peerId required' }, 400);
+      overlayData.activity.set(body.peerId, {
+        peerId: body.peerId,
+        intensity: body.intensity || 0,
+        action: body.action || 'idle',
+        lastUpdate: Date.now()
+      });
+      broadcastOverlay('activity', { peerId: body.peerId, intensity: body.intensity || 0, action: body.action || 'idle' });
+      return jsonResponse(res, { ok: true });
+    }
+
+    // POST /api/overlay/scoreboard — update overall scoreboard
+    if (urlPath === '/api/overlay/scoreboard' && method === 'POST') {
+      const body = await readBody(req);
+      overlayData.scoreboard = {
+        title: body.title || overlayData.scoreboard.title,
+        teams: body.teams || overlayData.scoreboard.teams,
+        clock: body.clock || overlayData.scoreboard.clock,
+        status: body.status || overlayData.scoreboard.status
+      };
+      broadcastOverlay('scoreboard', overlayData.scoreboard);
+      return jsonResponse(res, { ok: true });
+    }
+
+    // DELETE /api/overlay/reset — clear all overlay data
+    if (urlPath === '/api/overlay/reset' && method === 'DELETE') {
+      overlayData.players.clear();
+      overlayData.activity.clear();
+      overlayData.scoreboard = { title: '', teams: [], clock: '', status: 'idle' };
+      broadcastOverlay('reset', {});
+      return jsonResponse(res, { ok: true });
+    }
+
     // Unknown API route
     return jsonResponse(res, { error: 'Not found' }, 404);
   }
@@ -822,10 +935,12 @@ const server = http.createServer(async (req, res) => {
     const data = fs.readFileSync(filePath);
     const headers = {
       'Content-Type': contentType,
-      'X-Frame-Options': 'DENY',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
     };
+    if (!urlPath.startsWith('/overlay/')) {
+      headers['X-Frame-Options'] = 'DENY';
+    }
     headers['Access-Control-Allow-Origin'] = '*';
     res.writeHead(200, headers);
     res.end(data);
