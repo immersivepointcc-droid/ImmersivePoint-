@@ -743,6 +743,107 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* ── Connection Status Indicators ── */
+
+    .conn-online {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: #10B981;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .conn-offline {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ink-faint);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+    .conn-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .conn-dot.online {
+      background: #10B981;
+      box-shadow: 0 0 6px #10B981;
+      animation: pulse-online 2s infinite;
+    }
+    .conn-dot.offline {
+      background: var(--ink-faint);
+    }
+    @keyframes pulse-online {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ── Scan Network Modal ── */
+
+    .scan-results-list {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
+
+    .scan-result-item {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-1);
+    }
+
+    .scan-result-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--ink-faint);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .scan-result-item input[type="checkbox"]:checked {
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .scan-result-item input[type="checkbox"]:checked::after {
+      content: '\2713';
+      position: absolute;
+      top: -1px;
+      left: 2px;
+      font-size: 12px;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .scan-result-info {
+      flex: 1;
+    }
+
+    .scan-result-name {
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--ink);
+    }
+
+    .scan-result-detail {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--ink-dim);
+    }
+
     /* ── Responsive ── */
 
     @media (max-width: 768px) {
@@ -838,6 +939,10 @@
       <div class="ops-stat-value" id="stat-attention">--</div>
       <div class="ops-stat-label">Needs Attention</div>
     </div>
+    <div class="ops-stat">
+      <div class="ops-stat-value" id="stat-online" style="color: #10B981">0</div>
+      <div class="ops-stat-label">Online</div>
+    </div>
   </div>
 
   <!-- Tab Navigation -->
@@ -877,6 +982,7 @@
         <option value="Accessory">Accessory</option>
       </select>
       <button class="btn btn-primary" id="btn-add-device">+ Add Device</button>
+      <button class="btn btn-ghost" id="btn-scan-network" title="Scan network for discoverable devices">Scan Network</button>
     </div>
     <div id="devices-content">
       <div class="empty-state">
@@ -1136,6 +1242,27 @@
     </div>
   </div>
 
+  <!-- ═══════════════ SCAN NETWORK MODAL ═══════════════ -->
+  <div class="modal-overlay" id="scan-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Scan Network — Discovered Devices</h2>
+        <button class="modal-close" data-close="scan-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="scan-results-content">
+          <div class="empty-state" style="padding: var(--sp-6);">
+            <p>Scanning network...</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="scan-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-import-scanned" disabled>Import Selected</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1162,6 +1289,7 @@
     let allDeployments  = [];
     let allMaintenance  = [];
     let deviceMap       = {};
+    let liveDevices     = []; // from /api/devices
 
     // ── Checklist Template ──
     const CHECKLIST_TEMPLATE = [
@@ -1363,14 +1491,27 @@
         return;
       }
 
-      const rows = filtered.map(d => `
-        <tr>
+      const rows = filtered.map(d => {
+        const isOnline = liveDevices.some(ld =>
+          ld.online && (
+            (d.serial && ld.serial === d.serial) ||
+            ld.name === d.name ||
+            ld.deviceId === d.id
+          )
+        );
+        const connHtml = isOnline
+          ? '<span class="conn-online"><span class="conn-dot online"></span>Online</span>'
+          : '<span class="conn-offline"><span class="conn-dot offline"></span>Offline</span>';
+
+        return `
+        <tr data-device-id="${esc(d.id)}">
           <td>
             <div class="device-name">${esc(d.name)}</div>
             ${d.serial ? `<div class="device-serial">${esc(d.serial)}</div>` : ''}
           </td>
           <td><span class="device-type-badge ${typeClass(d.type)}">${esc(d.type)}</span></td>
           <td><span class="status-pill ${statusClass(d.status)}">${esc(d.status)}</span></td>
+          <td class="conn-cell">${connHtml}</td>
           <td><span class="condition-pill ${conditionClass(d.condition)}">${esc(d.condition)}</span></td>
           <td><span class="last-checked-date">${formatDate(d.last_checked)}</span></td>
           <td title="${esc(d.notes)}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(d.notes || '')}</td>
@@ -1378,7 +1519,8 @@
             <button class="btn btn-ghost btn-sm btn-edit-device" data-id="${esc(d.id)}" title="Edit">&#x270E;</button>
             <button class="btn btn-danger btn-sm btn-delete-device" data-id="${esc(d.id)}" title="Delete">&times;</button>
           </td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
 
       container.innerHTML = `
         <div class="table-wrap">
@@ -1388,6 +1530,7 @@
                 <th>Device</th>
                 <th>Type</th>
                 <th>Status</th>
+                <th>Connection</th>
                 <th>Condition</th>
                 <th>Last Checked</th>
                 <th>Notes</th>
@@ -1888,6 +2031,175 @@
     }
 
     // ══════════════════════════════════════════════════
+    //  DEVICE CONNECTIVITY POLLING
+    // ══════════════════════════════════════════════════
+
+    async function pollDeviceStatus() {
+      try {
+        const res = await fetch('/api/devices');
+        if (res.ok) {
+          liveDevices = await res.json();
+          updateConnectionStatus();
+        }
+      } catch {
+        // Silently fail — device registry may be unavailable
+      }
+    }
+
+    function updateConnectionStatus() {
+      // Update the "Online" stat count
+      const onlineCount = liveDevices.filter(d => d.online).length;
+      const el = document.getElementById('stat-online');
+      if (el) el.textContent = onlineCount;
+
+      // Update table rows if they exist
+      document.querySelectorAll('[data-device-id]').forEach(row => {
+        const deviceId = row.dataset.deviceId;
+        const device = allDevices.find(d => d.id === deviceId);
+        if (!device) return;
+
+        const isOnline = liveDevices.some(ld =>
+          ld.online && (
+            (device.serial && ld.serial === device.serial) ||
+            ld.name === device.name ||
+            ld.deviceId === device.id
+          )
+        );
+
+        const connCell = row.querySelector('.conn-cell');
+        if (connCell) {
+          connCell.innerHTML = isOnline
+            ? '<span class="conn-online"><span class="conn-dot online"></span>Online</span>'
+            : '<span class="conn-offline"><span class="conn-dot offline"></span>Offline</span>';
+        }
+      });
+    }
+
+    // ══════════════════════════════════════════════════
+    //  SCAN NETWORK
+    // ══════════════════════════════════════════════════
+
+    async function handleScanNetwork() {
+      openModal('scan-modal');
+      const content = $('#scan-results-content');
+      const importBtn = $('#btn-import-scanned');
+      importBtn.disabled = true;
+
+      content.innerHTML = `
+        <div class="empty-state" style="padding: var(--sp-6);">
+          <p>Scanning network...</p>
+        </div>`;
+
+      let discovered = [];
+      try {
+        const res = await fetch('/api/devices');
+        if (!res.ok) throw new Error('Failed to fetch');
+        discovered = await res.json();
+      } catch {
+        content.innerHTML = `
+          <div class="empty-state" style="padding: var(--sp-6);">
+            <h3>Scan failed</h3>
+            <p>Could not reach the device registry at /api/devices.</p>
+          </div>`;
+        return;
+      }
+
+      // Filter out devices already in inventory (match by serial or name)
+      const newDevices = discovered.filter(ld => {
+        return !allDevices.some(d =>
+          (d.serial && ld.serial && d.serial === ld.serial) ||
+          d.name === ld.name ||
+          d.id === ld.deviceId
+        );
+      });
+
+      if (!newDevices.length) {
+        content.innerHTML = `
+          <div class="empty-state" style="padding: var(--sp-6);">
+            <h3>No new devices found</h3>
+            <p>All discovered devices are already in your inventory.</p>
+          </div>`;
+        return;
+      }
+
+      content.innerHTML = `
+        <p style="font-size:0.85rem;color:var(--ink-dim);margin-bottom:var(--sp-3);">
+          Found <strong>${newDevices.length}</strong> device(s) not in inventory. Select which to import:
+        </p>
+        <div class="scan-results-list">
+          ${newDevices.map((ld, i) => `
+            <div class="scan-result-item">
+              <input type="checkbox" id="scan-item-${i}" data-scan-index="${i}" checked>
+              <div class="scan-result-info">
+                <div class="scan-result-name">${esc(ld.name || ld.deviceId || 'Unknown Device')}</div>
+                <div class="scan-result-detail">
+                  ${ld.serial ? `SN: ${esc(ld.serial)}` : ''}
+                  ${ld.type ? ` &middot; ${esc(ld.type)}` : ''}
+                  ${ld.online ? ' &middot; Online' : ''}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+
+      importBtn.disabled = false;
+
+      // Store discovered list for import handler
+      importBtn._newDevices = newDevices;
+
+      // Toggle import button based on selection
+      content.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const anyChecked = content.querySelector('input[type="checkbox"]:checked');
+          importBtn.disabled = !anyChecked;
+        });
+      });
+    }
+
+    function handleImportScanned() {
+      const importBtn = $('#btn-import-scanned');
+      const newDevices = importBtn._newDevices;
+      if (!newDevices) return;
+
+      const content = $('#scan-results-content');
+      const checkboxes = content.querySelectorAll('input[type="checkbox"]:checked');
+      let importedCount = 0;
+
+      checkboxes.forEach(cb => {
+        const idx = parseInt(cb.dataset.scanIndex);
+        const ld = newDevices[idx];
+        if (!ld) return;
+
+        // Map discovered device type to known inventory types
+        const knownTypes = ['Quest 3', 'Vive Focus 3', 'Laptop', 'Router', 'Accessory'];
+        let deviceType = 'Accessory';
+        if (ld.type) {
+          const match = knownTypes.find(t => t.toLowerCase() === ld.type.toLowerCase());
+          if (match) deviceType = match;
+        }
+
+        const record = {
+          name: ld.name || ld.deviceId || 'Discovered Device',
+          type: deviceType,
+          serial: ld.serial || '',
+          status: 'Ready',
+          condition: 'Good',
+          last_checked: todayStr(),
+          notes: 'Auto-imported via network scan'
+        };
+
+        saveDevice(record);
+        importedCount++;
+      });
+
+      closeModal('scan-modal');
+      if (importedCount > 0) {
+        toast(`Imported ${importedCount} device${importedCount > 1 ? 's' : ''} from network scan.`);
+        loadAll();
+      }
+    }
+
+    // ══════════════════════════════════════════════════
     //  TAB NAVIGATION
     // ══════════════════════════════════════════════════
 
@@ -1954,6 +2266,10 @@
     $('#btn-save-deploy').addEventListener('click', handleSaveDeployment);
     $('#btn-save-maint').addEventListener('click', handleSaveMaintenance);
 
+    // ── Scan Network ──
+    $('#btn-scan-network').addEventListener('click', handleScanNetwork);
+    $('#btn-import-scanned').addEventListener('click', handleImportScanned);
+
     // ── Print button ──
     $('#btn-print-checklist').addEventListener('click', () => window.print());
 
@@ -1982,6 +2298,10 @@
     // ══════════════════════════════════════════════════
 
     loadAll();
+
+    // Start polling device connectivity every 5 seconds
+    setInterval(pollDeviceStatus, 5000);
+    pollDeviceStatus();
   </script>
 </body>
 </html>
