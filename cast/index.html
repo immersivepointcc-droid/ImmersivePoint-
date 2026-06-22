@@ -1900,7 +1900,6 @@ function initSenderView(roomCode) {
   let localStream = null;
   let reconnectTimer = null;
   let stopped = false;
-  let heartbeatInterval = null;
 
   function setStatus(state, text) {
     statusWrap.style.display = '';
@@ -2125,6 +2124,7 @@ function initSenderView(roomCode) {
    MDM COMMAND POLLING & KIOSK MODE
    ================================================================ */
 
+let heartbeatInterval = null;
 let commandPollInterval = null;
 let currentPolicy = null;
 let isKioskLocked = false;

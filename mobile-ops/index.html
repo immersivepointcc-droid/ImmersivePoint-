@@ -1004,6 +1004,116 @@
       font-family: var(--font-mono);
     }
 
+    /* ── MDM Fleet Management Enhancements ── */
+
+    .mdm-alerts-banner {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-4);
+      margin-bottom: var(--sp-4);
+    }
+    .mdm-alerts-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--sp-2);
+      font-family: var(--font-heading);
+      font-size: 0.85rem;
+      color: #EF4444;
+    }
+    .mdm-alert-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--sp-2) 0;
+      border-bottom: 1px solid rgba(239, 68, 68, 0.1);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--ink-dim);
+    }
+    .mdm-alert-item:last-child { border-bottom: none; }
+    .mdm-telemetry {
+      margin: var(--sp-2) 0;
+      padding: var(--sp-2) 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .mdm-telemetry-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--ink-dim);
+      margin-bottom: 4px;
+    }
+    .mdm-telemetry-row:last-child { margin-bottom: 0; }
+    .mdm-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--surface-3);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .mdm-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+    .mdm-groups-grid {
+      display: flex;
+      gap: var(--sp-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--sp-6);
+    }
+    .mdm-group-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--sp-3) var(--sp-4);
+      min-width: 200px;
+    }
+    .mdm-group-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      margin: 1px;
+    }
+    .mdm-audit-log {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .mdm-audit-entry {
+      display: flex;
+      gap: var(--sp-3);
+      padding: var(--sp-2) var(--sp-3);
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+    }
+    .mdm-audit-entry:last-child { border-bottom: none; }
+    .mdm-audit-time { color: var(--ink-faint); white-space: nowrap; }
+    .mdm-audit-action { color: var(--cyan); font-weight: 600; white-space: nowrap; }
+    .mdm-audit-target { color: var(--ink-dim); }
+    .mdm-sched-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-2) var(--sp-3);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: var(--sp-2);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
     /* ── Print ── */
 
     @media print {
@@ -1190,6 +1300,13 @@
 
   <!-- ═══════════════ DEVICE MANAGEMENT (MDM) PANEL ═══════════════ -->
   <div class="ops-panel" id="panel-mdm" role="tabpanel">
+    <div id="mdm-alerts-banner" class="mdm-alerts-banner" style="display:none;">
+      <div class="mdm-alerts-header">
+        <span>&#x26A0; Active Alerts</span>
+        <button class="btn btn-ghost btn-sm" id="btn-ack-all-alerts">Acknowledge All</button>
+      </div>
+      <div id="mdm-alerts-list"></div>
+    </div>
     <div class="mdm-fleet-bar">
       <h3>Fleet Control</h3>
       <div class="mdm-fleet-actions">
@@ -1198,11 +1315,17 @@
         <button class="btn btn-ghost btn-sm" id="btn-fleet-message">Message All</button>
         <button class="btn btn-danger btn-sm" id="btn-fleet-lock">Lock All</button>
         <button class="btn btn-ghost btn-sm" id="btn-fleet-unlock">Unlock All</button>
+        <button class="btn btn-ghost btn-sm" id="btn-fleet-export">&#x1F4E5; Export CSV</button>
       </div>
     </div>
     <div id="mdm-devices-grid" class="mdm-grid">
       <!-- Populated by JS -->
     </div>
+    <div class="mdm-section-header" style="margin-top:var(--sp-6);">
+      <h3>Device Groups</h3>
+      <button class="btn btn-primary btn-sm" id="btn-add-group">+ New Group</button>
+    </div>
+    <div id="mdm-groups-list" class="mdm-groups-grid"></div>
     <div class="mdm-policies-section">
       <div class="mdm-section-header">
         <h3>Device Policies</h3>
@@ -1212,6 +1335,16 @@
         <!-- Populated by JS -->
       </div>
     </div>
+    <div class="mdm-section-header" style="margin-top:var(--sp-6);">
+      <h3>Scheduled Commands</h3>
+      <button class="btn btn-primary btn-sm" id="btn-add-scheduled">+ Schedule</button>
+    </div>
+    <div id="mdm-scheduled-list"></div>
+    <div class="mdm-section-header" style="margin-top:var(--sp-6);">
+      <h3>Audit Log</h3>
+      <button class="btn btn-ghost btn-sm" id="btn-refresh-audit">Refresh</button>
+    </div>
+    <div id="mdm-audit-log" class="mdm-audit-log"></div>
   </div>
 
   <!-- ═══════════════ POLICY MODAL ═══════════════ -->
