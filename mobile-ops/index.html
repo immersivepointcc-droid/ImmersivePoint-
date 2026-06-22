@@ -1650,6 +1650,88 @@
     </div>
   </div>
 
+  <!-- ═══════════════ GROUP MODAL ═══════════════ -->
+  <div class="modal-overlay" id="group-modal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h2 id="group-modal-title">New Group</h2>
+        <button class="modal-close" data-close="group-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="group-form-id" />
+        <div class="form-group">
+          <label class="form-label">Group Name</label>
+          <input type="text" class="input" id="group-name" placeholder="e.g., Building A, Session 3" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Color</label>
+          <div style="display:flex;gap:8px;" id="group-color-picker">
+            <button type="button" class="btn btn-sm gcl" data-color="#EF4444" style="background:#EF4444;width:32px;height:32px;border-radius:50%;border:2px solid transparent;"></button>
+            <button type="button" class="btn btn-sm gcl" data-color="#F59E0B" style="background:#F59E0B;width:32px;height:32px;border-radius:50%;border:2px solid transparent;"></button>
+            <button type="button" class="btn btn-sm gcl" data-color="#10B981" style="background:#10B981;width:32px;height:32px;border-radius:50%;border:2px solid transparent;"></button>
+            <button type="button" class="btn btn-sm gcl" data-color="#3B82F6" style="background:#3B82F6;width:32px;height:32px;border-radius:50%;border:2px solid transparent;"></button>
+            <button type="button" class="btn btn-sm gcl" data-color="#8B5CF6" style="background:#8B5CF6;width:32px;height:32px;border-radius:50%;border:2px solid transparent;"></button>
+            <button type="button" class="btn btn-sm gcl" data-color="#EC4899" style="background:#EC4899;width:32px;height:32px;border-radius:50%;border:2px solid transparent;"></button>
+          </div>
+          <input type="hidden" id="group-color" value="#F59E0B" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="group-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-group">Save Group</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ SCHEDULE MODAL ═══════════════ -->
+  <div class="modal-overlay" id="schedule-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Schedule Command</h2>
+        <button class="modal-close" data-close="schedule-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Command</label>
+            <select class="select" id="sched-command">
+              <option value="navigate">Navigate</option>
+              <option value="refresh">Refresh</option>
+              <option value="lock">Lock</option>
+              <option value="unlock">Unlock</option>
+              <option value="message">Message</option>
+              <option value="restart">Restart</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Target</label>
+            <select class="select" id="sched-target-type">
+              <option value="fleet">All Devices</option>
+              <option value="group">Group</option>
+              <option value="device">Single Device</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" id="sched-target-wrap" style="display:none;">
+          <label class="form-label">Select Target</label>
+          <select class="select" id="sched-target-id"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Scheduled Time</label>
+          <input type="datetime-local" class="input" id="sched-time" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payload (URL or message)</label>
+          <input type="text" class="input" id="sched-payload" placeholder="URL or message text..." />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" data-close="schedule-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-scheduled">Schedule</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -1678,6 +1760,10 @@
     let deviceMap       = {};
     let liveDevices     = []; // from /api/devices
     let allPolicies     = []; // from /api/policies
+    let allGroups       = [];
+    let allAlerts       = [];
+    let allScheduled    = [];
+    let auditEntries    = [];
 
     // ── Checklist Template ──
     const CHECKLIST_TEMPLATE = [
@@ -2466,6 +2552,7 @@
       const mdmPanel = document.getElementById('panel-mdm');
       if (mdmPanel && mdmPanel.classList.contains('active')) {
         renderMDMDevices();
+        loadAlerts();
       }
     }
 
@@ -2602,6 +2689,7 @@
         const res = await fetch('/api/policies');
         if (res.ok) allPolicies = await res.json();
       } catch {}
+      await Promise.all([loadAlerts(), loadGroups(), loadAuditLog(), loadScheduledCommands()]);
       renderMDMDevices();
       renderPolicies();
     }
@@ -2626,6 +2714,37 @@
         const policyName = policy ? policy.name : 'None';
         const lastSeen = d.lastSeen ? new Date(d.lastSeen).toLocaleTimeString() : 'Never';
 
+        // Telemetry data
+        const batteryPct = d.batteryLevel !== undefined ? d.batteryLevel : null;
+        const batteryColor = batteryPct > 50 ? '#10B981' : batteryPct > 20 ? '#F59E0B' : '#EF4444';
+        const storagePct = (d.storageUsed && d.storageTotal) ? Math.round((d.storageUsed / d.storageTotal) * 100) : null;
+        const storageColor = storagePct > 80 ? '#EF4444' : storagePct > 50 ? '#F59E0B' : '#10B981';
+        const wifiInfo = d.connectionType ? d.connectionType + (d.wifiSignal ? ' · ' + d.wifiSignal + ' Mbps' : '') : 'Unknown';
+
+        // Groups this device belongs to
+        const deviceGroups = allGroups.filter(g => (g.deviceIds || []).includes(d.peerId) || (g.deviceIds || []).includes(d.id));
+        const groupTags = deviceGroups.map(g => '<span class="mdm-group-tag" style="background:' + g.color + '22;color:' + g.color + ';border:1px solid ' + g.color + '44;">' + esc(g.name) + '</span>').join('');
+
+        // Telemetry HTML
+        let telemetryHtml = '';
+        if (batteryPct !== null || storagePct !== null) {
+          telemetryHtml = '<div class="mdm-telemetry">';
+          if (batteryPct !== null) {
+            telemetryHtml += '<div class="mdm-telemetry-row">' +
+              '<span style="width:50px;">' + (d.batteryCharging ? '&#x26A1;' : '&#x1F50B;') + ' ' + batteryPct + '%</span>' +
+              '<div class="mdm-bar"><div class="mdm-bar-fill" style="width:' + batteryPct + '%;background:' + batteryColor + ';"></div></div>' +
+            '</div>';
+          }
+          if (storagePct !== null) {
+            telemetryHtml += '<div class="mdm-telemetry-row">' +
+              '<span style="width:50px;">&#x1F4BE; ' + storagePct + '%</span>' +
+              '<div class="mdm-bar"><div class="mdm-bar-fill" style="width:' + storagePct + '%;background:' + storageColor + ';"></div></div>' +
+            '</div>';
+          }
+          telemetryHtml += '<div class="mdm-telemetry-row"><span>&#x1F4F6; ' + esc(wifiInfo) + '</span></div>';
+          telemetryHtml += '</div>';
+        }
+
         return `
           <div class="mdm-device-card ${isOnline ? 'online' : ''}">
             <div class="mdm-device-card-header">
@@ -2635,13 +2754,18 @@
                 <div class="mdm-device-card-type">${esc(d.type || 'headset')} ${d.serial ? '&middot; ' + esc(d.serial) : ''}</div>
               </div>
             </div>
+            ${groupTags ? '<div style="margin-bottom:var(--sp-2);">' + groupTags + '</div>' : ''}
+            ${telemetryHtml}
             <div class="mdm-device-card-policy">Policy: ${esc(policyName)}</div>
+            ${d.currentUrl ? '<div style="font-size:0.68rem;color:var(--cyan);font-family:var(--font-mono);margin-bottom:var(--sp-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(d.currentUrl) + '">' + esc(d.currentUrl) + '</div>' : ''}
             <div style="font-size:0.7rem;color:var(--ink-faint);font-family:var(--font-mono);">Last seen: ${lastSeen}</div>
             <div class="mdm-device-card-actions">
               <button class="btn btn-ghost btn-sm" onclick="window._mdm.navigate('${esc(d.peerId)}')">Navigate</button>
               <button class="btn btn-ghost btn-sm" onclick="window._mdm.message('${esc(d.peerId)}')">Message</button>
               <button class="btn btn-ghost btn-sm" onclick="window._mdm.refresh('${esc(d.peerId)}')">Refresh</button>
               <button class="btn btn-ghost btn-sm" onclick="window._mdm.setPolicy('${esc(d.peerId)}')">Policy</button>
+              <button class="btn btn-ghost btn-sm" onclick="window._mdm.mdmScreenshot('${esc(d.peerId)}')" title="Screenshot">&#x1F4F7;</button>
+              <button class="btn btn-ghost btn-sm" onclick="window._mdm.mdmAddToGroup('${esc(d.peerId)}')">Tag</button>
               ${isOnline ? `<button class="btn btn-danger btn-sm" onclick="window._mdm.lock('${esc(d.peerId)}')">Lock</button>` : ''}
             </div>
           </div>`;
@@ -2821,6 +2945,252 @@
       } catch { toast('Failed to delete policy.', 'error'); }
     }
 
+    // ── Alerts ──
+    async function loadAlerts() {
+      try {
+        const res = await fetch('/api/alerts/active');
+        if (res.ok) allAlerts = await res.json();
+      } catch {}
+      renderAlerts();
+    }
+
+    function renderAlerts() {
+      const banner = $('#mdm-alerts-banner');
+      const list = $('#mdm-alerts-list');
+      if (!banner || !list) return;
+      if (!allAlerts.length) { banner.style.display = 'none'; return; }
+      banner.style.display = '';
+      list.innerHTML = allAlerts.map(a =>
+        '<div class="mdm-alert-item">' +
+          '<span class="mdm-alert-severity-' + (a.severity || 'warning') + '">' + esc(a.message) + '</span>' +
+          '<span>' + new Date(a.timestamp).toLocaleTimeString() + '</span>' +
+        '</div>'
+      ).join('');
+    }
+
+    async function ackAllAlerts() {
+      for (const a of allAlerts) {
+        try { await fetch('/api/alerts/' + encodeURIComponent(a.id) + '/ack', { method: 'POST' }); } catch {}
+      }
+      allAlerts = [];
+      renderAlerts();
+      toast('All alerts acknowledged.');
+    }
+
+    // ── Groups ──
+    async function loadGroups() {
+      try {
+        const res = await fetch('/api/groups');
+        if (res.ok) allGroups = await res.json();
+      } catch {}
+      renderGroups();
+    }
+
+    function renderGroups() {
+      const container = $('#mdm-groups-list');
+      if (!container) return;
+      if (!allGroups.length) {
+        container.innerHTML = '<div class="mdm-empty">No groups. Create groups to organize devices for batch operations.</div>';
+        return;
+      }
+      container.innerHTML = allGroups.map(g => {
+        const count = (g.deviceIds || []).length;
+        return '<div class="mdm-group-card">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<span style="width:12px;height:12px;border-radius:50%;background:' + esc(g.color || '#F59E0B') + ';display:inline-block;"></span>' +
+            '<strong style="font-family:var(--font-heading);font-size:0.9rem;color:var(--ink);">' + esc(g.name) + '</strong>' +
+          '</div>' +
+          '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--ink-dim);margin-bottom:8px;">' + count + ' device' + (count !== 1 ? 's' : '') + '</div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
+            '<button class="btn btn-ghost btn-sm" onclick="window._mdm.sendGroupCmd(\'' + esc(g.id) + '\',\'refresh\')">Refresh</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="window._mdm.sendGroupCmd(\'' + esc(g.id) + '\',\'lock\')">Lock</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="window._mdm.sendGroupCmd(\'' + esc(g.id) + '\',\'unlock\')">Unlock</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="window._mdm.deleteGroup(\'' + esc(g.id) + '\')">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function openAddGroup() {
+      $('#group-modal-title').textContent = 'New Group';
+      $('#group-form-id').value = '';
+      $('#group-name').value = '';
+      $('#group-color').value = '#F59E0B';
+      openModal('group-modal');
+    }
+
+    async function handleSaveGroup() {
+      const name = $('#group-name').value.trim();
+      if (!name) { toast('Group name is required.', 'error'); return; }
+      const body = { id: $('#group-form-id').value || undefined, name, color: $('#group-color').value };
+      try {
+        await fetch('/api/groups', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        closeModal('group-modal');
+        toast('Group saved.');
+        loadGroups();
+      } catch { toast('Failed to save group.', 'error'); }
+    }
+
+    async function deleteGroup(id) {
+      if (!confirm('Delete this group?')) return;
+      try {
+        await fetch('/api/groups/' + encodeURIComponent(id), { method: 'DELETE' });
+        toast('Group deleted.');
+        loadGroups();
+      } catch { toast('Failed.', 'error'); }
+    }
+
+    async function sendGroupCmd(groupId, command, payload) {
+      try {
+        await fetch('/api/groups/' + encodeURIComponent(groupId) + '/command', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command, payload })
+        });
+        toast('Command sent to group.');
+      } catch { toast('Failed.', 'error'); }
+    }
+
+    function mdmAddToGroup(peerId) {
+      if (!allGroups.length) { toast('Create a group first.', 'error'); return; }
+      const buttons = allGroups.map(g =>
+        '<button class="btn btn-ghost btn-sm" onclick="window._mdm.addDeviceToGroup(\'' + esc(peerId) + '\',\'' + esc(g.id) + '\')" style="margin:4px;">' +
+        '<span style="width:8px;height:8px;border-radius:50%;background:' + esc(g.color) + ';display:inline-block;margin-right:4px;"></span>' + esc(g.name) + '</button>'
+      ).join('');
+      let picker = document.getElementById('group-picker-popup');
+      if (picker) picker.remove();
+      picker = document.createElement('div');
+      picker.id = 'group-picker-popup';
+      picker.className = 'modal-overlay open';
+      picker.innerHTML = '<div class="modal" style="max-width:400px;"><div class="modal-header"><h2>Add to Group</h2><button class="modal-close" onclick="this.closest(\'.modal-overlay\').remove()">&times;</button></div><div class="modal-body" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">' + buttons + '</div></div>';
+      document.body.appendChild(picker);
+      picker.addEventListener('click', e => { if (e.target === picker) picker.remove(); });
+    }
+
+    async function addDeviceToGroup(peerId, groupId) {
+      try {
+        await fetch('/api/groups/' + encodeURIComponent(groupId) + '/devices', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceIds: [peerId] })
+        });
+        toast('Device added to group.');
+        const popup = document.getElementById('group-picker-popup');
+        if (popup) popup.remove();
+        loadGroups();
+        loadMDMData();
+      } catch { toast('Failed.', 'error'); }
+    }
+
+    function mdmScreenshot(peerId) {
+      sendDeviceCommand(peerId, 'screenshot');
+    }
+
+    // ── Audit Log ──
+    async function loadAuditLog() {
+      try {
+        const res = await fetch('/api/audit?limit=100');
+        if (res.ok) auditEntries = await res.json();
+      } catch {}
+      renderAuditLog();
+    }
+
+    function renderAuditLog() {
+      const container = $('#mdm-audit-log');
+      if (!container) return;
+      if (!auditEntries.length) {
+        container.innerHTML = '<div class="mdm-empty" style="padding:var(--sp-4);">No audit entries yet.</div>';
+        return;
+      }
+      container.innerHTML = auditEntries.slice().reverse().slice(0, 100).map(e =>
+        '<div class="mdm-audit-entry">' +
+          '<span class="mdm-audit-time">' + new Date(e.timestamp).toLocaleTimeString() + '</span>' +
+          '<span class="mdm-audit-action">' + esc(e.action) + '</span>' +
+          '<span class="mdm-audit-target">' + esc(e.targetName || e.target || '') + '</span>' +
+        '</div>'
+      ).join('');
+    }
+
+    // ── Scheduled Commands ──
+    async function loadScheduledCommands() {
+      try {
+        const res = await fetch('/api/scheduled');
+        if (res.ok) allScheduled = await res.json();
+      } catch {}
+      renderScheduledCommands();
+    }
+
+    function renderScheduledCommands() {
+      const container = $('#mdm-scheduled-list');
+      if (!container) return;
+      const pending = allScheduled.filter(s => !s.executed);
+      if (!pending.length) {
+        container.innerHTML = '<div class="mdm-empty">No scheduled commands.</div>';
+        return;
+      }
+      container.innerHTML = pending.map(s =>
+        '<div class="mdm-sched-item">' +
+          '<div><strong>' + esc(s.command) + '</strong> → ' + esc(s.targetType) + (s.targetId ? ':' + esc(s.targetId) : '') +
+          '<br><span style="color:var(--ink-faint);font-size:0.68rem;">' + new Date(s.scheduledAt).toLocaleString() + '</span></div>' +
+          '<button class="btn btn-danger btn-sm" onclick="window._mdm.cancelScheduled(\'' + esc(s.id) + '\')">Cancel</button>' +
+        '</div>'
+      ).join('');
+    }
+
+    function openAddScheduled() {
+      $('#sched-time').value = '';
+      $('#sched-payload').value = '';
+      $('#sched-command').value = 'navigate';
+      $('#sched-target-type').value = 'fleet';
+      $('#sched-target-wrap').style.display = 'none';
+      openModal('schedule-modal');
+    }
+
+    async function handleSaveScheduled() {
+      const scheduledAt = $('#sched-time').value;
+      if (!scheduledAt) { toast('Select a time.', 'error'); return; }
+      const body = {
+        command: $('#sched-command').value,
+        targetType: $('#sched-target-type').value,
+        targetId: $('#sched-target-type').value !== 'fleet' ? $('#sched-target-id').value : undefined,
+        scheduledAt: new Date(scheduledAt).toISOString(),
+        payload: {}
+      };
+      const payloadVal = $('#sched-payload').value.trim();
+      if (body.command === 'navigate') body.payload = { url: payloadVal };
+      else if (body.command === 'message') body.payload = { text: payloadVal };
+
+      try {
+        await fetch('/api/scheduled', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        closeModal('schedule-modal');
+        toast('Command scheduled.');
+        loadScheduledCommands();
+      } catch { toast('Failed.', 'error'); }
+    }
+
+    async function cancelScheduled(id) {
+      try {
+        await fetch('/api/scheduled/' + encodeURIComponent(id), { method: 'DELETE' });
+        toast('Cancelled.');
+        loadScheduledCommands();
+      } catch { toast('Failed.', 'error'); }
+    }
+
+    // ── CSV Export ──
+    async function exportDevicesCSV() {
+      try {
+        const res = await fetch('/api/devices/export');
+        if (!res.ok) throw new Error('Export failed');
+        const csv = await res.text();
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'immersivepoint-devices-' + new Date().toISOString().slice(0,10) + '.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+        toast('Exported.');
+      } catch { toast('Export failed.', 'error'); }
+    }
+
     // Expose MDM actions globally for onclick handlers in rendered HTML
     window._mdm = {
       navigate: mdmNavigate,
@@ -2830,7 +3200,20 @@
       setPolicy: mdmSetPolicy,
       assignPolicy: assignPolicy,
       editPolicy: editPolicy,
-      deletePolicy: deletePolicy
+      deletePolicy: deletePolicy,
+      ackAllAlerts: ackAllAlerts,
+      openAddGroup: openAddGroup,
+      handleSaveGroup: handleSaveGroup,
+      deleteGroup: deleteGroup,
+      sendGroupCmd: sendGroupCmd,
+      addDeviceToGroup: addDeviceToGroup,
+      mdmAddToGroup: mdmAddToGroup,
+      mdmScreenshot: mdmScreenshot,
+      loadAuditLog: loadAuditLog,
+      openAddScheduled: openAddScheduled,
+      handleSaveScheduled: handleSaveScheduled,
+      cancelScheduled: cancelScheduled,
+      exportDevicesCSV: exportDevicesCSV
     };
 
     // ══════════════════════════════════════════════════
@@ -2960,6 +3343,35 @@
     // ── Policy modal ──
     $('#btn-add-policy')?.addEventListener('click', openAddPolicy);
     $('#btn-save-policy')?.addEventListener('click', handleSavePolicy);
+
+    // ── New fleet management event listeners ──
+    $('#btn-ack-all-alerts')?.addEventListener('click', () => window._mdm.ackAllAlerts());
+    $('#btn-add-group')?.addEventListener('click', () => window._mdm.openAddGroup());
+    $('#btn-save-group')?.addEventListener('click', () => window._mdm.handleSaveGroup());
+    $('#btn-add-scheduled')?.addEventListener('click', () => window._mdm.openAddScheduled());
+    $('#btn-save-scheduled')?.addEventListener('click', () => window._mdm.handleSaveScheduled());
+    $('#btn-refresh-audit')?.addEventListener('click', () => window._mdm.loadAuditLog());
+    $('#btn-fleet-export')?.addEventListener('click', () => window._mdm.exportDevicesCSV());
+
+    $('#sched-target-type')?.addEventListener('change', function() {
+      const wrap = $('#sched-target-wrap');
+      if (this.value === 'fleet') { wrap.style.display = 'none'; return; }
+      wrap.style.display = '';
+      const sel = $('#sched-target-id');
+      if (this.value === 'group') {
+        sel.innerHTML = allGroups.map(g => '<option value="' + esc(g.id) + '">' + esc(g.name) + '</option>').join('');
+      } else {
+        sel.innerHTML = liveDevices.map(d => '<option value="' + esc(d.peerId) + '">' + esc(d.name) + '</option>').join('');
+      }
+    });
+
+    document.querySelectorAll('.gcl').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.gcl').forEach(b => b.style.borderColor = 'transparent');
+        this.style.borderColor = '#fff';
+        $('#group-color').value = this.dataset.color;
+      });
+    });
 
     // ── Print button ──
     $('#btn-print-checklist').addEventListener('click', () => window.print());
