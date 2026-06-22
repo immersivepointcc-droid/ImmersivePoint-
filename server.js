@@ -85,6 +85,7 @@ const overlayData = {
   players: new Map(),
   scoreboard: { title: '', teams: [], clock: '', status: 'idle' },
   activity: new Map(),
+  mode: 'arena',
   lastUpdate: Date.now()
 };
 const sseClients = new Set();
@@ -836,8 +837,20 @@ const server = http.createServer(async (req, res) => {
         players: [...overlayData.players.values()],
         scoreboard: overlayData.scoreboard,
         activity: [...overlayData.activity.values()],
+        mode: overlayData.mode,
         lastUpdate: overlayData.lastUpdate
       });
+    }
+
+    // POST /api/overlay/mode — switch between arena and career modes
+    if (urlPath === '/api/overlay/mode' && method === 'POST') {
+      const body = await readBody(req);
+      if (body.mode && (body.mode === 'arena' || body.mode === 'career')) {
+        overlayData.mode = body.mode;
+        broadcastOverlay('mode', { mode: body.mode });
+        return jsonResponse(res, { ok: true, mode: body.mode });
+      }
+      return jsonResponse(res, { error: 'mode must be "arena" or "career"' }, 400);
     }
 
     // GET /api/overlay/events — SSE stream
@@ -873,6 +886,11 @@ const server = http.createServer(async (req, res) => {
           assists: p.assists !== undefined ? p.assists : (existing.assists || 0),
           team: p.team || existing.team || '',
           avatar: p.avatar || existing.avatar || '',
+          pathway: p.pathway || existing.pathway || '',
+          archetype: p.archetype || existing.archetype || '',
+          simulation: p.simulation || existing.simulation || '',
+          progress: p.progress !== undefined ? p.progress : (existing.progress || 0),
+          careersExplored: p.careersExplored !== undefined ? p.careersExplored : (existing.careersExplored || 0),
           lastUpdate: Date.now()
         });
       }
@@ -912,6 +930,7 @@ const server = http.createServer(async (req, res) => {
       overlayData.players.clear();
       overlayData.activity.clear();
       overlayData.scoreboard = { title: '', teams: [], clock: '', status: 'idle' };
+      overlayData.mode = 'arena';
       broadcastOverlay('reset', {});
       return jsonResponse(res, { ok: true });
     }
