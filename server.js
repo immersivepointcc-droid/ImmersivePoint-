@@ -1,10 +1,10 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { PeerServer } = require('peer');
+const { ExpressPeerServer } = require('peer');
+const express = require('express');
 
 const PORT = parseInt(process.env.PORT, 10) || 3000;
-const PEER_PORT = parseInt(process.env.PEER_PORT, 10) || 9000;
 const ROOT = __dirname;
 
 // ── Persistent state file ────────────────────────────────────────────
@@ -312,8 +312,13 @@ setInterval(() => {
   }
 }, 15000);
 
-// ── HTTP Server ─────────────────────────────────────────────────────
-const server = http.createServer(async (req, res) => {
+// ── Express app (PeerJS requires Express for signaling) ────────────
+const app = express();
+const server = http.createServer(app);
+
+app.use(async (req, res, next) => {
+  if (req.url && req.url.startsWith('/peerjs/')) { return next(); }
+
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const urlPath = decodeURIComponent(parsed.pathname);
   const query = parsed.searchParams;
@@ -969,13 +974,9 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-// Start PeerJS signaling server
-const peerServer = PeerServer({
-  port: PEER_PORT,
-  host: '0.0.0.0',
-  path: '/peer',
-  allow_discovery: false,
-});
+// Mount PeerJS signaling on the same HTTP server (port 3000)
+const peerServer = ExpressPeerServer(server, { path: '/peerjs', allow_discovery: false });
+app.use(peerServer);
 
 peerServer.on('connection', (client) => {
   const peerId = client.getId();
@@ -1000,7 +1001,7 @@ server.listen(PORT, () => {
     const padded = `http://${localIP}:${PORT}`;
     console.log(`  ║  Network:   ${padded.padEnd(33)}║`);
   }
-  console.log(`  ║  PeerJS:    ws://localhost:${PEER_PORT}/peer           ║`);
+  console.log(`  ║  PeerJS:    ws://localhost:${PORT}/peerjs              ║`);
   console.log('  ║                                              ║');
   console.log('  ║  MDM API:   /api/devices, /api/policies     ║');
   console.log('  ║  Cast Hub:  /cast/                           ║');

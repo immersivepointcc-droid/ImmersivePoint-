@@ -1356,9 +1356,9 @@ const PEER_CONFIG = (() => {
   if (isLocal) {
     return {
       host: location.hostname,
-      port: 9000,
-      secure: false,
-      path: '/peer',
+      port: parseInt(location.port, 10) || 3000,
+      secure: location.protocol === 'https:',
+      path: '/peerjs',
       debug: 1,
       config: {
         iceServers: [
@@ -2209,20 +2209,13 @@ function initSenderView(roomCode) {
     peer.on('open', (myPeerId) => {
       console.log('[Cast Sender] Peer open:', myPeerId);
       const facilitatorPeerId = `ip-cast-${roomCode}`;
-      const devType = detectDeviceType();
 
-      // Register device and start heartbeat
-      registerDevice(myPeerId, senderName, devType);
+      registerDevice(myPeerId, senderName, detectDeviceType());
       startDeviceHeartbeat(myPeerId);
-
-      // Update MDM polling to use the real peer ID (for auto-connect clients)
-      if (window.location.hash === '#auto') {
-        startMDMPolling(myPeerId);
-        console.log('[MDM] Switched command polling to real peer ID:', myPeerId);
-      }
+      startMDMPolling(myPeerId);
 
       mediaConn = peer.call(facilitatorPeerId, localStream, {
-        metadata: { name: senderName, deviceType: devType },
+        metadata: { name: senderName },
       });
 
       if (!mediaConn) {
@@ -2321,11 +2314,7 @@ function initSenderView(roomCode) {
     stopped = !!fullStop;
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
-
-    // Report session end if a session was active
-    if (mdmPeerId && sessionStartTime) {
-      reportSessionEnd(mdmPeerId, location.href, sessionStartTime);
-    }
+    if (commandPollInterval) { clearInterval(commandPollInterval); commandPollInterval = null; }
 
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
