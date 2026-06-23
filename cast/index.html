@@ -2423,32 +2423,50 @@ function initAutoConnect() {
   // Poll for active room
   let pollTimer = null;
 
+  // Debug element to show API responses on-screen
+  let debugEl = document.getElementById('auto-debug');
+  if (!debugEl) {
+    debugEl = document.createElement('div');
+    debugEl.id = 'auto-debug';
+    debugEl.style.cssText = 'margin-top:1rem;padding:0.75rem;background:rgba(0,0,0,0.5);border:1px solid #333;border-radius:6px;font-size:0.7rem;color:#8892B0;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto;';
+    senderCard.appendChild(debugEl);
+  }
+  let debugLines = [];
+  function dbg(msg) {
+    debugLines.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    if (debugLines.length > 20) debugLines.shift();
+    debugEl.textContent = debugLines.join('\n');
+  }
+  dbg('Auto-connect started');
+  dbg('Fetching: ' + location.origin + '/api/cast/room');
+
   async function checkForRoom() {
     try {
       const res = await fetch('/api/cast/room');
       const text = await res.text();
+      dbg(`Room poll: status=${res.status} body="${text.slice(0, 100)}"`);
       console.log('[Auto-Connect] Room poll:', res.status, text);
 
       if (res.ok && text && text !== 'null') {
         const data = JSON.parse(text);
         if (data && data.code) {
-          // Room found — stop polling and connect
           if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          dbg('Room found: ' + data.code + ' — connecting...');
           console.log('[Auto-Connect] Found active room:', data.code);
           roomCodeEl.textContent = data.code;
           senderCard.querySelector('h2').textContent = 'Cast to Hub';
-          statusDot.className = 'status-dot status-dot-pending';
+          statusDot.className = 'status-dot status-dot-connected';
           statusText.textContent = 'Connecting to room ' + data.code + '...';
           initSenderView(data.code);
           return;
         }
       }
     } catch (err) {
+      dbg('ERROR: ' + err.message);
       console.error('[Auto-Connect] Poll error:', err);
       statusText.innerHTML = '<span style="color:var(--amber);">Cannot reach server — retrying...</span>';
       return;
     }
-    // Still waiting — update status
     statusDot.className = 'status-dot status-dot-pending';
     statusText.innerHTML = '<span style="display:inline-flex;align-items:center;gap:var(--sp-2);">' +
       '<span class="auto-connect-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-glow);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>' +
