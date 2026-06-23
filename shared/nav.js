@@ -15,6 +15,7 @@ const MODULES = [
   { id: 'passport',  label: 'Passport',   icon: '⦾', href: '/passport/' },
   { id: 'crm',       label: 'CRM',        icon: '☰', href: '/crm/' },
   { id: 'vendors',   label: 'Vendors',    icon: '⌂', href: '/vendors/' },
+  { id: 'mobile-ops', label: 'Mobile Ops', icon: '⚙', href: '/mobile-ops/' },
   { id: 'cast',      label: 'Cast Hub',   icon: '◉', href: '/cast/' },
 ];
 
@@ -25,6 +26,7 @@ const MODULE_TITLES = {
   passport:  'Career Passport',
   crm:       'Contact Management',
   vendors:   'Vendor Integrations',
+  'mobile-ops': 'Mobile Operations',
   cast:      'Cast Hub',
 };
 

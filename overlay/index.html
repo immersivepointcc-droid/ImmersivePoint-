@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ImmersivePoint Broadcast Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: transparent; overflow: hidden; font-family: 'Share Tech Mono', monospace; color: #E0E6ED; }
+
+#scoreboard {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 27, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-top: 2px solid #00D4FF;
+  border-radius: 12px;
+  padding: 12px 28px;
+  min-width: 500px;
+  max-width: 750px;
+  display: none;
+  animation: fadeIn 0.5s ease;
+  z-index: 100;
+}
+.sb-row-1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.sb-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #EF4444;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.sb-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #EF4444;
+  animation: pulse 1.5s infinite;
+}
+.sb-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #00D4FF;
+}
+.sb-clock {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #F59E0B;
+}
+.sb-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-family: 'Orbitron', sans-serif;
+}
+.sb-team {
+  text-align: center;
+}
+.sb-team-name {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+}
+.sb-team-score {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.sb-vs {
+  font-size: 0.7rem;
+  color: #8892B0;
+  font-weight: 600;
+}
+.sb-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.72rem;
+  color: #8892B0;
+  margin-top: 6px;
+}
+.sb-stat-val {
+  color: #00D4FF;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+#nameplates {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  z-index: 100;
+}
+
+.nameplate {
+  background: rgba(13, 27, 42, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  width: 180px;
+  text-align: center;
+  animation: slideUp 0.4s ease;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.nameplate.wide { width: 210px; }
+.nameplate.active {
+  border-color: #00D4FF;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.05);
+}
+.nameplate.elimd {
+  opacity: 0.4;
+}
+.np-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #E0E6ED;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.np-headset {
+  font-size: 0.6rem;
+  color: #8892B0;
+  letter-spacing: 0.06em;
+}
+.np-score {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #00D4FF;
+  margin: 4px 0;
+  transition: transform 0.2s;
+}
+.np-score.bump {
+  transform: scale(1.15);
+  color: #F59E0B;
+}
+.np-stats {
+  font-size: 0.62rem;
+  color: #8892B0;
+  letter-spacing: 0.05em;
+}
+.np-pathway {
+  font-size: 0.58rem;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 600;
+  color: #7B2FBE;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.np-simulation {
+  font-size: 0.55rem;
+  color: #F59E0B;
+  letter-spacing: 0.05em;
+  margin-top: 1px;
+}
+.np-progress {
+  margin-top: 6px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.np-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease-out;
+  background: linear-gradient(90deg, #7B2FBE, #00D4FF);
+}
+.np-activity {
+  margin-top: 6px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.np-activity-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease-out, background 0.3s;
+}
+.np-action {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 3px;
+  color: #8892B0;
+  min-height: 14px;
+}
+
+#action-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 212, 255, 0.15) 100%);
+}
+#action-flash.flash {
+  opacity: 1;
+}
+#action-flash.flash-career {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(123, 47, 190, 0.15) 100%);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateY(10px); }
+}
+</style>
+</head>
+<body>
+
+<div id="scoreboard"></div>
+<div id="nameplates"></div>
+<div id="action-flash"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var params = new URLSearchParams(location.search);
+  var serverBase = params.get('server') || '';
+  var maxPlayers = parseInt(params.get('maxPlayers'), 10) || 8;
+  var showScoreboard = params.get('showScoreboard') !== '0';
+  var showActivity = params.get('showActivity') !== '0';
+  var mode = params.get('mode') || 'arena';
+
+  var players = {};
+  var activity = {};
+  var scoreboard = { title: '', teams: [], clock: '', status: 'idle' };
+  var evtSource = null;
+
+  function fmt(n) {
+    return (n || 0).toLocaleString();
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+  }
+
+  function activityColor(intensity) {
+    if (intensity > 70) return '#EF4444';
+    if (intensity > 40) return '#F59E0B';
+    return '#10B981';
+  }
+
+  function progressColor(pct) {
+    if (pct >= 80) return '#10B981';
+    if (pct >= 40) return '#00D4FF';
+    return '#7B2FBE';
+  }
+
+  function renderScoreboard() {
+    var el = document.getElementById('scoreboard');
+    if (!showScoreboard || scoreboard.status === 'idle') {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+
+    var isLive = scoreboard.status === 'live';
+
+    if (mode === 'career') {
+      var totalParticipants = Object.keys(players).length;
+      var totalCareers = 0;
+      var avgProgress = 0;
+      var vals = Object.values(players);
+      for (var i = 0; i < vals.length; i++) {
+        totalCareers += (vals[i].careersExplored || 0);
+        avgProgress += (vals[i].progress || 0);
+      }
+      avgProgress = vals.length > 0 ? Math.round(avgProgress / vals.length) : 0;
+
+      el.innerHTML = '<div class="sb-row-1">' +
+        (isLive ? '<div class="sb-live"><span class="sb-live-dot"></span>LIVE</div>' : '<div></div>') +
+        '<div class="sb-title">' + esc(scoreboard.title || 'Career Fair') + '</div>' +
+        '<div class="sb-clock">' + esc(scoreboard.clock) + '</div>' +
+        '</div>' +
+        '<div class="sb-stats-row">' +
+          '<span>Participants: <span class="sb-stat-val">' + totalParticipants + '</span></span>' +
+          '<span>Careers Explored: <span class="sb-stat-val">' + totalCareers + '</span></span>' +
+          '<span>Avg Progress: <span class="sb-stat-val">' + avgProgress + '%</span></span>' +
+        '</div>';
+      return;
+    }
+
+    var teamsHtml = (scoreboard.teams || []).map(function (t, i) {
+      var color = t.color || (i === 0 ? '#00D4FF' : '#EF4444');
+      return '<div class="sb-team">' +
+        '<div class="sb-team-name" style="color:' + color + '">' + esc(t.name) + '</div>' +
+        '<div class="sb-team-score" style="color:' + color + '">' + fmt(t.score) + '</div>' +
+        '</div>';
+    }).join('<div class="sb-vs">VS</div>');
+
+    el.innerHTML = '<div class="sb-row-1">' +
+      (isLive ? '<div class="sb-live"><span class="sb-live-dot"></span>LIVE</div>' : '<div></div>') +
+      '<div class="sb-title">' + esc(scoreboard.title) + '</div>' +
+      '<div class="sb-clock">' + esc(scoreboard.clock) + '</div>' +
+      '</div>' +
+      '<div class="sb-teams">' + teamsHtml + '</div>';
+  }
+
+  function renderNameplates() {
+    var container = document.getElementById('nameplates');
+    var sortKey = mode === 'career' ? 'progress' : 'score';
+    var sorted = Object.values(players)
+      .sort(function (a, b) { return (b[sortKey] || 0) - (a[sortKey] || 0); })
+      .slice(0, maxPlayers);
+
+    var maxIntensity = -1;
+    var activePeerId = null;
+    for (var i = 0; i < sorted.length; i++) {
+      var act = activity[sorted[i].peerId];
+      if (act && act.intensity > maxIntensity) {
+        maxIntensity = act.intensity;
+        activePeerId = sorted[i].peerId;
+      }
+    }
+
+    var newIds = {};
+    for (var j = 0; j < sorted.length; j++) {
+      newIds[sorted[j].peerId] = true;
+    }
+
+    var existing = container.querySelectorAll('.nameplate');
+    for (var k = 0; k < existing.length; k++) {
+      if (!newIds[existing[k].dataset.peerId]) {
+        (function (el) {
+          el.style.animation = 'fadeOut 0.3s forwards';
+          setTimeout(function () { el.remove(); }, 300);
+        })(existing[k]);
+      }
+    }
+
+    for (var m = 0; m < sorted.length; m++) {
+      var p = sorted[m];
+      var pAct = activity[p.peerId] || { intensity: 0, action: '' };
+      var isActive = p.peerId === activePeerId;
+      var intensity = pAct.intensity || 0;
+      var barColor = activityColor(intensity);
+
+      var plate = container.querySelector('[data-peer-id="' + p.peerId + '"]');
+      if (!plate) {
+        plate = document.createElement('div');
+        plate.className = 'nameplate';
+        plate.dataset.peerId = p.peerId;
+        container.appendChild(plate);
+      }
+
+      plate.className = 'nameplate' + (isActive ? ' active' : '') + (mode === 'career' ? ' wide' : '');
+
+      var prevScore = plate.dataset.prevScore;
+      var currentVal = mode === 'career' ? (p.progress || 0) : (p.score || 0);
+      var scoreChanged = prevScore !== undefined && parseInt(prevScore, 10) !== currentVal;
+      plate.dataset.prevScore = currentVal;
+
+      if (mode === 'career') {
+        var prog = p.progress || 0;
+        plate.innerHTML = '<div class="np-name">' + esc(p.name) + '</div>' +
+          (p.archetype
+            ? '<div class="np-pathway">' + esc(p.archetype) + '</div>'
+            : '<div class="np-headset">' + esc(p.headsetType || 'VR Headset') + '</div>') +
+          (p.pathway
+            ? '<div class="np-simulation">' + esc(p.pathway) + '</div>'
+            : '') +
+          '<div class="np-score' + (scoreChanged ? ' bump' : '') + '" style="font-size:1.1rem;">' + prog + '%</div>' +
+          '<div class="np-stats">' +
+            (p.careersExplored ? p.careersExplored + ' career' + (p.careersExplored !== 1 ? 's' : '') + ' explored' : '') +
+            (p.simulation ? (p.careersExplored ? ' · ' : '') + esc(p.simulation) : '') +
+          '</div>' +
+          '<div class="np-progress"><div class="np-progress-fill" style="width:' + prog + '%;"></div></div>' +
+          (showActivity
+            ? '<div class="np-action">' + (pAct.action !== 'idle' ? esc(pAct.action) : '') + '</div>'
+            : '');
+      } else {
+        var teamColor = p.team
+          ? (p.team === 'blue' ? '#00D4FF' : p.team === 'red' ? '#EF4444' : '#F59E0B')
+          : '';
+        var teamBorder = teamColor ? 'border-left: 3px solid ' + teamColor + ';' : '';
+
+        plate.innerHTML = '<div class="np-name">' + esc(p.name) + '</div>' +
+          '<div class="np-headset">' + esc(p.headsetType || 'VR Headset') + '</div>' +
+          '<div class="np-score' + (scoreChanged ? ' bump' : '') + '">' + fmt(p.score) + '</div>' +
+          '<div class="np-stats">K:' + (p.kills || 0) + ' D:' + (p.deaths || 0) + ' A:' + (p.assists || 0) + '</div>' +
+          (showActivity
+            ? '<div class="np-activity"><div class="np-activity-fill" style="width:' + intensity + '%;background:' + barColor + '"></div></div>' +
+              '<div class="np-action">' + (pAct.action !== 'idle' ? esc(pAct.action) : '') + '</div>'
+            : '');
+
+        if (teamBorder) {
+          plate.style.cssText = teamBorder;
+        } else {
+          plate.style.cssText = '';
+        }
+      }
+
+      if (scoreChanged) {
+        (function (pl) {
+          setTimeout(function () {
+            var sc = pl.querySelector('.np-score');
+            if (sc) sc.classList.remove('bump');
+          }, 300);
+        })(plate);
+      }
+    }
+
+    if (maxIntensity > 80) {
+      var flash = document.getElementById('action-flash');
+      flash.classList.add(mode === 'career' ? 'flash-career' : 'flash');
+      setTimeout(function () { flash.classList.remove('flash', 'flash-career'); }, 200);
+    }
+  }
+
+  function handleSSEMessage(event) {
+    try {
+      var msg = JSON.parse(event.data);
+      switch (msg.type) {
+        case 'scores':
+          var payload = msg.payload || [];
+          for (var i = 0; i < payload.length; i++) {
+            players[payload[i].peerId] = payload[i];
+          }
+          renderNameplates();
+          if (mode === 'career') renderScoreboard();
+          break;
+        case 'activity':
+          activity[msg.payload.peerId] = msg.payload;
+          renderNameplates();
+          break;
+        case 'scoreboard':
+          scoreboard = msg.payload;
+          renderScoreboard();
+          break;
+        case 'mode':
+          mode = msg.payload.mode;
+          renderScoreboard();
+          renderNameplates();
+          break;
+        case 'reset':
+          players = {};
+          activity = {};
+          scoreboard = { title: '', teams: [], clock: '', status: 'idle' };
+          renderScoreboard();
+          renderNameplates();
+          break;
+      }
+    } catch (e) {
+      console.error('[Overlay] SSE parse error:', e);
+    }
+  }
+
+  function connectSSE() {
+    if (evtSource) {
+      try { evtSource.close(); } catch (ignore) {}
+    }
+    evtSource = new EventSource(serverBase + '/api/overlay/events');
+    evtSource.onmessage = handleSSEMessage;
+    evtSource.onerror = function () {
+      console.warn('[Overlay] SSE disconnected, retrying in 3s...');
+      try { evtSource.close(); } catch (ignore) {}
+      setTimeout(connectSSE, 3000);
+    };
+  }
+
+  function loadInitialState() {
+    return fetch(serverBase + '/api/overlay/state')
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.mode) mode = data.mode;
+        var ps = data.players || [];
+        for (var i = 0; i < ps.length; i++) players[ps[i].peerId] = ps[i];
+        var acts = data.activity || [];
+        for (var j = 0; j < acts.length; j++) activity[acts[j].peerId] = acts[j];
+        if (data.scoreboard) scoreboard = data.scoreboard;
+        renderScoreboard();
+        renderNameplates();
+      })
+      .catch(function (err) {
+        console.warn('[Overlay] Could not load initial state:', err);
+      });
+  }
+
+  loadInitialState().then(connectSSE);
+})();
+</script>
+</body>
+</html>

@@ -187,6 +187,92 @@
     color: var(--ink);
   }
 
+  /* Broadcast control panel */
+  .broadcast-panel {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-4);
+  }
+  .broadcast-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--sp-3);
+  }
+  .broadcast-panel-header h3 {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+  }
+  .broadcast-mode-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+  }
+  .broadcast-mode-toggle button {
+    padding: 4px 12px;
+    border: none;
+    background: transparent;
+    color: var(--ink-dim);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .broadcast-mode-toggle button.active {
+    background: var(--cyan);
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .broadcast-controls {
+    display: flex;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .broadcast-controls input {
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-3);
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    flex: 1;
+    min-width: 120px;
+  }
+  .broadcast-controls input:focus {
+    outline: none;
+    border-color: var(--cyan);
+  }
+  .broadcast-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--ink-dim);
+    font-family: var(--font-mono);
+  }
+  .broadcast-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+  }
+  .broadcast-status-dot.live {
+    background: #EF4444;
+    box-shadow: 0 0 6px #EF4444;
+    animation: statusPulse 2s ease-in-out infinite;
+  }
+  @keyframes statusPulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
   /* Video grid */
   .video-grid {
     display: grid;
@@ -851,6 +937,10 @@
         <span id="peer-count">0</span> connected
       </span>
     </div>
+    <div class="cast-header-right" style="display:flex;gap:var(--sp-2);align-items:center;">
+      <a href="/overlay/" target="_blank" class="btn btn-ghost btn-sm" title="Open OBS Broadcast Overlay">&#x1F4FA; Broadcast Overlay</a>
+      <a href="/mobile-ops/" class="btn btn-ghost btn-sm" title="Manage device fleet">&#x2699; Fleet Mgmt</a>
+    </div>
   </div>
 
   <!-- Room code -->
@@ -878,6 +968,31 @@
     <div class="controls-bar-right">
       <button class="btn btn-ghost btn-sm" id="mute-all-btn" title="Mute all feeds">Mute All</button>
       <button class="btn btn-ghost btn-sm" id="unmute-all-btn" title="Unmute all feeds">Unmute All</button>
+    </div>
+  </div>
+
+  <!-- Broadcast Control Panel -->
+  <div class="broadcast-panel" id="broadcast-panel">
+    <div class="broadcast-panel-header">
+      <h3>&#x1F4FA; Broadcast Overlay</h3>
+      <div style="display:flex;align-items:center;gap:var(--sp-3);">
+        <div class="broadcast-status">
+          <span class="broadcast-status-dot" id="broadcast-dot"></span>
+          <span id="broadcast-status-text">Idle</span>
+        </div>
+        <div class="broadcast-mode-toggle" id="broadcast-mode-toggle">
+          <button class="active" data-mode="arena">Arena</button>
+          <button data-mode="career">Career Fair</button>
+        </div>
+      </div>
+    </div>
+    <div class="broadcast-controls">
+      <input type="text" id="bc-title" placeholder="Event title (e.g. VR Arena Round 2)" style="flex:2;min-width:180px;" />
+      <input type="text" id="bc-clock" placeholder="Clock (e.g. 04:32)" style="max-width:80px;" />
+      <button class="btn btn-primary btn-sm" id="bc-go-live">Go Live</button>
+      <button class="btn btn-ghost btn-sm" id="bc-update" style="display:none;">Update</button>
+      <button class="btn btn-danger btn-sm" id="bc-stop" style="display:none;">Stop</button>
+      <button class="btn btn-ghost btn-sm" id="bc-reset">Reset Overlay</button>
     </div>
   </div>
 
@@ -932,6 +1047,12 @@
         </div>
       </div>
     </div>
+    <div class="how-to-compat" style="margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);background:rgba(123,47,190,0.06);border:1px solid rgba(123,47,190,0.15);border-radius:var(--radius-md);margin-bottom:var(--sp-4);">
+      <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--purple-glow);letter-spacing:0.1em;margin-bottom:var(--sp-2);">AUTO-CONNECT MODE</div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--ink-dim);line-height:1.6;">
+        Set headset browser homepage to <strong style="color:var(--cyan-glow);" id="auto-connect-url"></strong> — headsets will auto-discover the active room and start casting on power-on. No room code needed.
+      </div>
+    </div>
     <div class="how-to-compat" style="margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);background:rgba(0,180,216,0.06);border:1px solid rgba(0,180,216,0.15);border-radius:var(--radius-md);">
       <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--cyan);letter-spacing:0.1em;margin-bottom:var(--sp-2);">COMPATIBLE HEADSETS</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);">
@@ -952,6 +1073,12 @@
 <div id="sender-view" class="sender-view" style="display:none">
   <div class="sender-card">
     <div class="sender-brand">IMMERSIVEPOINT</div>
+    <div id="mdm-badge" style="display:none;margin:0 auto 0.5rem;">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:4px;padding:4px 10px;font-size:0.75rem;color:#00D4FF;font-family:'Share Tech Mono',monospace;">
+        <span id="mdm-badge-dot" style="width:6px;height:6px;border-radius:50%;background:#10B981;"></span>
+        Managed Device
+      </div>
+    </div>
     <h2>Cast to Hub</h2>
     <div class="sender-room-code" id="sender-room-code"></div>
 
@@ -960,7 +1087,8 @@
       <input type="text" id="sender-name" class="input" placeholder="e.g. Headset 1, Student A" maxlength="30" autocomplete="off" />
     </div>
 
-    <button class="btn btn-danger sender-btn" id="stop-cast-btn" style="display:none">Stop Casting</button>
+    <button class="btn btn-primary sender-btn" id="register-btn">Connect to MDM</button>
+    <button class="btn btn-danger sender-btn" id="disconnect-btn" style="display:none">Disconnect</button>
 
     <div class="sender-status" id="sender-status" style="display:none">
       <span class="status-dot" id="sender-status-dot"></span>
@@ -968,12 +1096,20 @@
     </div>
 
     <div class="sender-error" id="sender-error" style="display:none"></div>
-  </div>
 
-  <!-- Preview (shown when casting) -->
-  <div class="sender-preview-wrap" id="sender-preview" style="display:none">
-    <video id="sender-preview-video" autoplay muted playsinline></video>
-    <div class="sender-preview-label">Your Cast Preview</div>
+    <!-- Native Cast Instructions -->
+    <div id="native-cast-info" style="display:none;margin-top:var(--sp-4);padding:var(--sp-4);background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;text-align:left;">
+      <div style="font-family:Orbitron,sans-serif;font-size:0.85rem;color:var(--cyan-glow);margin-bottom:var(--sp-2);">Native Cast Setup</div>
+      <ol style="font-size:0.8rem;color:var(--ink-dim);line-height:1.6;padding-left:1.2rem;margin:0;">
+        <li><b>Meta Quest:</b> Quick Settings → Cast → select laptop or "Computer"</li>
+        <li><b>Vive Focus:</b> Settings → Cast → Mirror to Computer</li>
+        <li><b>Pico:</b> Settings → Lab → Screencast</li>
+      </ol>
+      <div style="font-size:0.75rem;color:var(--ink-faint);margin-top:var(--sp-2);">
+        The facilitator captures your cast window in OBS as a source.<br>
+        This device is registered with MDM — the facilitator can send commands.
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1033,6 +1169,8 @@ const isSenderMode = !!joinCode;
 
 if (isSenderMode) {
   initSenderView(joinCode);
+} else if (location.hash === '#auto') {
+  initAutoConnect();
 } else {
   initFacilitatorView();
 }
@@ -1074,6 +1212,11 @@ async function initFacilitatorView() {
     howToUrl.textContent = IS_LOCAL ? `${location.host}/cast/#join=CODE` : 'ipcast.netlify.app/CODE';
   }
 
+  const autoConnectUrl = document.getElementById('auto-connect-url');
+  if (autoConnectUrl) {
+    autoConnectUrl.textContent = `${location.host}/cast/#auto`;
+  }
+
   // Copy buttons
   document.getElementById('copy-link-btn').addEventListener('click', () => {
     copyToClipboard(buildJoinURL(roomCode));
@@ -1107,6 +1250,93 @@ async function initFacilitatorView() {
   document.getElementById('unmute-all-btn').addEventListener('click', () => {
     videoGrid.querySelectorAll('video').forEach(v => v.muted = false);
   });
+
+  // Broadcast controls
+  let broadcastLive = false;
+  const bcTitle = document.getElementById('bc-title');
+  const bcClock = document.getElementById('bc-clock');
+  const bcGoLive = document.getElementById('bc-go-live');
+  const bcUpdate = document.getElementById('bc-update');
+  const bcStop = document.getElementById('bc-stop');
+  const bcReset = document.getElementById('bc-reset');
+  const bcDot = document.getElementById('broadcast-dot');
+  const bcStatusText = document.getElementById('broadcast-status-text');
+  const bcModeToggle = document.getElementById('broadcast-mode-toggle');
+
+  function bcPost(endpoint, data) {
+    return fetch(endpoint, {
+      method: data === undefined ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: data !== undefined ? JSON.stringify(data) : undefined
+    }).catch(() => {});
+  }
+
+  bcModeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    bcModeToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    bcPost('/api/overlay/mode', { mode: btn.dataset.mode });
+    bcTitle.placeholder = btn.dataset.mode === 'career'
+      ? 'Event title (e.g. Eastern KY Career Fair)'
+      : 'Event title (e.g. VR Arena Round 2)';
+  });
+
+  bcGoLive.addEventListener('click', () => {
+    const activeMode = bcModeToggle.querySelector('.active').dataset.mode;
+    bcPost('/api/overlay/scoreboard', {
+      title: bcTitle.value || (activeMode === 'career' ? 'Career Fair' : 'VR Arena'),
+      clock: bcClock.value || '',
+      status: 'live',
+      teams: activeMode === 'arena' ? [
+        { name: 'Blue', score: 0, color: '#00D4FF' },
+        { name: 'Red', score: 0, color: '#EF4444' }
+      ] : []
+    });
+    broadcastLive = true;
+    bcGoLive.style.display = 'none';
+    bcUpdate.style.display = '';
+    bcStop.style.display = '';
+    bcDot.classList.add('live');
+    bcStatusText.textContent = 'Live';
+  });
+
+  bcUpdate.addEventListener('click', () => {
+    const update = {};
+    if (bcTitle.value) update.title = bcTitle.value;
+    if (bcClock.value) update.clock = bcClock.value;
+    bcPost('/api/overlay/scoreboard', update);
+  });
+
+  bcStop.addEventListener('click', () => {
+    bcPost('/api/overlay/scoreboard', { status: 'idle' });
+    broadcastLive = false;
+    bcGoLive.style.display = '';
+    bcUpdate.style.display = 'none';
+    bcStop.style.display = 'none';
+    bcDot.classList.remove('live');
+    bcStatusText.textContent = 'Idle';
+  });
+
+  bcReset.addEventListener('click', () => {
+    bcPost('/api/overlay/reset');
+    broadcastLive = false;
+    bcGoLive.style.display = '';
+    bcUpdate.style.display = 'none';
+    bcStop.style.display = 'none';
+    bcDot.classList.remove('live');
+    bcStatusText.textContent = 'Idle';
+    bcTitle.value = '';
+    bcClock.value = '';
+  });
+
+  // Register room immediately so headsets can discover it via auto-connect
+  fetch('/api/cast/room', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: roomCode, facilitatorPeerId: `ip-cast-${roomCode}` })
+  }).then(() => console.log('[Cast Hub] Room registered:', roomCode))
+    .catch(() => console.warn('[Cast Hub] Failed to register room'));
 
   // Initialize PeerJS as facilitator
   initFacilitatorPeer(roomCode);
@@ -1172,6 +1402,9 @@ const PEER_CONFIG = (() => {
   };
 })();
 
+let peerRetryCount = 0;
+const MAX_PEER_RETRIES = 5;
+
 function initFacilitatorPeer(roomCode) {
   const peerId = `ip-cast-${roomCode}`;
   let peer;
@@ -1179,28 +1412,51 @@ function initFacilitatorPeer(roomCode) {
   try {
     peer = new Peer(peerId, PEER_CONFIG);
   } catch (err) {
-    showFacilitatorError('Failed to initialize PeerJS. The signaling server may be unavailable.');
+    peerRetryCount++;
+    if (peerRetryCount <= MAX_PEER_RETRIES) {
+      const delay = Math.min(2000 * peerRetryCount, 8000);
+      showFacilitatorError(`PeerJS signaling server unavailable. Retrying in ${delay / 1000}s... (${peerRetryCount}/${MAX_PEER_RETRIES})`);
+      setTimeout(() => initFacilitatorPeer(roomCode), delay);
+    } else {
+      showFacilitatorError('Cannot connect to PeerJS signaling server. Make sure the ImmersivePoint server is running, then refresh the page.');
+    }
     return;
   }
 
   peer.on('open', () => {
+    peerRetryCount = 0;
     console.log('[Cast Hub] Facilitator peer open:', peerId);
+    clearFacilitatorError();
+
+    // Register active room with server
+    fetch('/api/cast/room', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: roomCode, facilitatorPeerId: peerId })
+    }).catch(() => {});
   });
 
   peer.on('error', (err) => {
     console.error('[Cast Hub] Peer error:', err);
     if (err.type === 'unavailable-id') {
-      // Room code collision — generate a new one
       const newCode = generateRoomCode();
       sessionStorage.setItem('ip_cast_room_code', newCode);
       document.getElementById('room-code').textContent = newCode;
       showFacilitatorError(`Room code was already in use. New code: ${newCode}. Reloading...`);
       setTimeout(() => location.reload(), 2000);
     } else if (err.type === 'network' || err.type === 'server-error') {
-      showFacilitatorError('Cannot reach the PeerJS signaling server. Check your internet connection and try refreshing.');
+      peerRetryCount++;
+      if (peerRetryCount <= MAX_PEER_RETRIES) {
+        const delay = Math.min(2000 * peerRetryCount, 8000);
+        showFacilitatorError(`Signaling server unreachable. Retrying in ${delay / 1000}s... (${peerRetryCount}/${MAX_PEER_RETRIES})`);
+        if (peer && !peer.destroyed) { try { peer.destroy(); } catch (e) {} }
+        setTimeout(() => initFacilitatorPeer(roomCode), delay);
+      } else {
+        showFacilitatorError('Cannot reach the PeerJS signaling server. Make sure the ImmersivePoint server is running, then refresh the page.');
+      }
     } else if (err.type === 'disconnected') {
-      showFacilitatorError('Lost connection to signaling server. Attempting to reconnect...');
-      setTimeout(() => peer.reconnect(), 3000);
+      showFacilitatorError('Lost connection to signaling server. Reconnecting...');
+      setTimeout(() => { if (!peer.destroyed) peer.reconnect(); }, 3000);
     }
   });
 
@@ -1214,16 +1470,22 @@ function initFacilitatorPeer(roomCode) {
   // Handle incoming calls
   peer.on('call', (mediaConn) => {
     const callerPeerId = mediaConn.peer;
-    const peerName = mediaConn.metadata?.name || 'Unknown Headset';
+    const meta = mediaConn.metadata || {};
+    const peerName = meta.name || 'Unknown Headset';
+    const deviceInfo = {
+      deviceId: meta.deviceId || null,
+      deviceType: meta.deviceType || null,
+      serial: meta.serial || null
+    };
 
-    console.log('[Cast Hub] Incoming call from:', callerPeerId, 'name:', peerName);
+    console.log('[Cast Hub] Incoming call from:', callerPeerId, 'name:', peerName, 'device:', deviceInfo);
 
     // Answer the call (no stream to send back)
     mediaConn.answer();
 
     mediaConn.on('stream', (remoteStream) => {
       console.log('[Cast Hub] Received stream from:', peerName);
-      addFeedCard(callerPeerId, peerName, remoteStream, mediaConn);
+      addFeedCard(callerPeerId, peerName, remoteStream, mediaConn, deviceInfo);
     });
 
     mediaConn.on('close', () => {
@@ -1253,7 +1515,6 @@ function initFacilitatorPeer(roomCode) {
 }
 
 function showFacilitatorError(msg) {
-  // Insert error message above video grid
   const grid = document.getElementById('video-grid');
   let errEl = document.getElementById('facilitator-error');
   if (!errEl) {
@@ -1267,7 +1528,12 @@ function showFacilitatorError(msg) {
   errEl.style.display = '';
 }
 
-function addFeedCard(peerId, name, stream, mediaConn) {
+function clearFacilitatorError() {
+  const errEl = document.getElementById('facilitator-error');
+  if (errEl) errEl.style.display = 'none';
+}
+
+function addFeedCard(peerId, name, stream, mediaConn, deviceInfo) {
   // Hide empty state
   const emptyState = document.getElementById('empty-state');
   if (emptyState) emptyState.style.display = 'none';
@@ -1409,7 +1675,7 @@ function addFeedCard(peerId, name, stream, mediaConn) {
   });
 
   // Track the peer
-  activePeers.set(peerId, { mediaConn, stream, name, element: card, stopRecording: () => { if (recorder && recorder.state === 'recording') stopRecording(); } });
+  activePeers.set(peerId, { mediaConn, stream, name, element: card, deviceInfo: deviceInfo || null, stopRecording: () => { if (recorder && recorder.state === 'recording') stopRecording(); } });
   setPeerCount(activePeers.size);
 
   // Monitor stream end
@@ -1745,107 +2011,137 @@ function openLightbox(src, type) {
    SENDER / HEADSET VIEW
    ================================================================ */
 
+function detectDeviceType() {
+  const ua = navigator.userAgent;
+  if (/Quest/i.test(ua)) return 'Quest 3';
+  if (/Vive|Focus/i.test(ua)) return 'Vive Focus 3';
+  return 'VR Headset';
+}
+
+/* ---- Device Telemetry Collection ---- */
+
+async function collectTelemetry() {
+  const telemetry = {};
+
+  // Battery level (Battery Status API)
+  try {
+    if (navigator.getBattery) {
+      const battery = await navigator.getBattery();
+      telemetry.batteryLevel = Math.round(battery.level * 100);
+      telemetry.batteryCharging = battery.charging;
+    }
+  } catch {}
+
+  // Storage estimate (StorageManager API)
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      telemetry.storageUsed = est.usage || 0;
+      telemetry.storageTotal = est.quota || 0;
+    }
+  } catch {}
+
+  // Network info (Network Information API — available on Android/Quest)
+  try {
+    if (navigator.connection) {
+      telemetry.wifiSignal = navigator.connection.downlink || null; // Mbps
+      telemetry.connectionType = navigator.connection.effectiveType || null; // 4g, 3g, etc.
+    }
+  } catch {}
+
+  // Browser and OS version
+  telemetry.browserVersion = navigator.userAgent;
+  telemetry.screenResolution = `${screen.width}x${screen.height}`;
+  telemetry.currentUrl = location.href;
+
+  return telemetry;
+}
+
+/* ---- Session Tracking ---- */
+
+let sessionStartTime = null;
+
+function reportSessionStart(peerId, url) {
+  sessionStartTime = Date.now();
+  fetch('/api/sessions/start', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ peerId, url: url || location.href, timestamp: new Date().toISOString() })
+  }).catch(() => {});
+}
+
+function reportSessionEnd(peerId, url, startTime) {
+  const duration = startTime ? Date.now() - startTime : 0;
+  fetch('/api/sessions/end', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ peerId, url: url || location.href, timestamp: new Date().toISOString(), duration })
+  }).catch(() => {});
+  sessionStartTime = null;
+}
+
+window.addEventListener('beforeunload', () => {
+  if (mdmPeerId && sessionStartTime) {
+    reportSessionEnd(mdmPeerId, location.href, sessionStartTime);
+  }
+});
+
+/* ---- Remote Screenshot Capture ---- */
+
+async function captureAndSendScreenshot() {
+  try {
+    const video = document.querySelector('#sender-preview-video');
+    if (video && video.srcObject) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 1280;
+      canvas.height = video.videoHeight || 720;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      const captures = JSON.parse(localStorage.getItem('ip_cast_captures') || '[]');
+      captures.unshift({ id: Date.now().toString(36), type: 'screenshot', name: 'MDM Remote Capture', timestamp: new Date().toISOString(), dataUrl });
+      localStorage.setItem('ip_cast_captures', JSON.stringify(captures));
+    }
+  } catch (e) { console.error('[MDM] Screenshot failed:', e); }
+}
+
+/* ---- Enhanced Heartbeat & Registration with Telemetry ---- */
+
+function startDeviceHeartbeat(peerId) {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(async () => {
+    const telemetry = await collectTelemetry();
+    fetch('/api/devices/heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ peerId, ...telemetry })
+    }).catch(() => {});
+  }, 10000);
+}
+
+async function registerDevice(peerId, name, type) {
+  const telemetry = await collectTelemetry();
+  fetch('/api/devices/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ peerId, name, type, ...telemetry })
+  }).catch(() => {});
+}
+
 function initSenderView(roomCode) {
   document.getElementById('sender-view').style.display = '';
   document.getElementById('sender-room-code').textContent = roomCode;
 
   const nameInput = document.getElementById('sender-name');
-  const stopBtn = document.getElementById('stop-cast-btn');
+  const registerBtn = document.getElementById('register-btn');
+  const disconnectBtn = document.getElementById('disconnect-btn');
   const statusWrap = document.getElementById('sender-status');
   const statusDot = document.getElementById('sender-status-dot');
   const statusText = document.getElementById('sender-status-text');
   const errorEl = document.getElementById('sender-error');
-  const previewWrap = document.getElementById('sender-preview');
-  const previewVideo = document.getElementById('sender-preview-video');
+  const nativeCastInfo = document.getElementById('native-cast-info');
 
-  let peer = null;
-  let mediaConn = null;
+  let mdmActive = false;
   let localStream = null;
-  let reconnectTimer = null;
-  let stopped = false;
-  let mdmPeerId = null;
-  let heartbeatInterval = null;
-  let commandPollInterval = null;
-
-  const API_BASE = `${location.protocol}//${location.hostname}:${location.port || 3000}`;
-
-  function detectDeviceType() {
-    const ua = navigator.userAgent;
-    if (/OculusBrowser|Quest/i.test(ua)) return 'Meta Quest';
-    if (/ViveBrowser|VIVE/i.test(ua)) return 'Vive Focus';
-    if (/Pico/i.test(ua)) return 'Pico';
-    if (/Android/i.test(ua)) return 'Android';
-    if (/iPad|iPhone/i.test(ua)) return 'iOS';
-    return 'Browser';
-  }
-
-  async function registerWithMDM(peerId, deviceName) {
-    mdmPeerId = peerId;
-    try {
-      await fetch(`${API_BASE}/api/devices/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          peerId,
-          name: deviceName,
-          type: detectDeviceType(),
-          policyId: 'default',
-          currentUrl: location.href,
-          browserVersion: navigator.userAgent.slice(0, 120),
-        })
-      });
-      console.log('[MDM] Registered:', peerId);
-    } catch (e) { console.warn('[MDM] Register failed:', e.message); }
-  }
-
-  function startHeartbeat(peerId) {
-    if (heartbeatInterval) clearInterval(heartbeatInterval);
-    heartbeatInterval = setInterval(async () => {
-      try {
-        await fetch(`${API_BASE}/api/devices/heartbeat`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            peerId,
-            currentUrl: location.href,
-            batteryLevel: navigator.getBattery ? await navigator.getBattery().then(b => Math.round(b.level * 100)).catch(() => null) : null,
-          })
-        });
-      } catch { /* silent */ }
-    }, 10_000);
-  }
-
-  function startCommandPoll(peerId) {
-    if (commandPollInterval) clearInterval(commandPollInterval);
-    commandPollInterval = setInterval(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/devices/${encodeURIComponent(peerId)}/commands`);
-        const cmds = await res.json();
-        for (const cmd of cmds) {
-          console.log('[MDM] Command:', cmd.command, cmd.payload);
-          if (cmd.command === 'navigate' && cmd.payload?.url) {
-            location.href = cmd.payload.url;
-          } else if (cmd.command === 'refresh') {
-            location.reload();
-          } else if (cmd.command === 'message' && cmd.payload?.text) {
-            showError(`📢 ${cmd.payload.text}`);
-            setTimeout(hideError, 8000);
-          }
-          fetch(`${API_BASE}/api/devices/${encodeURIComponent(peerId)}/ack`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ commandId: cmd.id, result: 'ok' })
-          }).catch(() => {});
-        }
-      } catch { /* silent */ }
-    }, 5_000);
-  }
-
-  function stopMDM() {
-    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
-    if (commandPollInterval) { clearInterval(commandPollInterval); commandPollInterval = null; }
-  }
-
   function setStatus(state, text) {
     statusWrap.style.display = '';
     statusText.textContent = text;
@@ -1862,193 +2158,306 @@ function initSenderView(roomCode) {
 
   function hideError() { errorEl.style.display = 'none'; }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-    showError('Screen sharing is not supported in this browser. Use Quest Browser (Meta Quest) or Vive Browser (Vive Focus 3).');
-    return;
-  }
-
   function getSenderName() {
-    return nameInput.value.trim() || 'VR Headset';
+    return nameInput.value.trim() || detectDeviceType();
   }
 
-  async function startCasting() {
-    if (stopped) return;
+  function connectMDM() {
+    const deviceName = getSenderName();
+    const peerId = 'headset-' + Math.random().toString(36).substr(2, 9);
+
+    setStatus('connecting', 'Registering with MDM...');
+    registerDevice(peerId, deviceName, detectDeviceType());
+    startDeviceHeartbeat(peerId);
+    startMDMPolling(peerId);
+
+    mdmActive = true;
+    nameInput.disabled = true;
+    registerBtn.style.display = 'none';
+    disconnectBtn.style.display = '';
+    if (nativeCastInfo) nativeCastInfo.style.display = '';
+
+    setStatus('connected', `Connected as "${deviceName}"`);
     hideError();
-    const senderName = getSenderName();
-
-    if (!localStream) {
-      try {
-        setStatus('connecting', 'Requesting screen capture...');
-        localStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
-        });
-      } catch (err) {
-        console.error('[Cast] getDisplayMedia error:', err);
-        if (err.name === 'NotAllowedError') {
-          showError('Screen sharing was denied. Tap the button below to retry.');
-          setStatus('error', 'Permission denied');
-          addRetryButton();
-        } else {
-          showError(`Screen capture failed: ${err.message}`);
-          scheduleReconnect();
-        }
-        return;
-      }
-
-      previewVideo.srcObject = localStream;
-      previewWrap.style.display = '';
-      stopBtn.style.display = '';
-      nameInput.disabled = true;
-
-      localStream.getVideoTracks().forEach(track => {
-        track.addEventListener('ended', () => {
-          cleanup(true);
-        });
-      });
-    }
-
-    connectToPeer(senderName);
+    console.log('[MDM] Headset registered:', peerId, deviceName);
   }
 
-  function connectToPeer(senderName) {
-    if (stopped || !localStream) return;
-    setStatus('connecting', 'Connecting to Cast Hub...');
+  function disconnectMDM() {
+    mdmActive = false;
+    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+    if (commandPollInterval) { clearInterval(commandPollInterval); commandPollInterval = null; }
+    nameInput.disabled = false;
+    registerBtn.style.display = '';
+    disconnectBtn.style.display = 'none';
+    if (nativeCastInfo) nativeCastInfo.style.display = 'none';
+    setStatus('error', 'Disconnected from MDM');
+  }
 
+  registerBtn.addEventListener('click', connectMDM);
+  disconnectBtn.addEventListener('click', disconnectMDM);
+
+  // Auto-connect on page load (for #auto mode and room-code joins)
+  connectMDM();
+}
+
+/* ================================================================
+   MDM COMMAND POLLING & KIOSK MODE
+   ================================================================ */
+
+let heartbeatInterval = null;
+let commandPollInterval = null;
+let currentPolicy = null;
+let isKioskLocked = false;
+let mdmPeerId = null;
+
+async function pollCommands(peerId) {
+  try {
+    const res = await fetch(`/api/devices/${encodeURIComponent(peerId)}/commands`);
+    if (!res.ok) return;
+    const commands = await res.json();
+    for (const cmd of commands) {
+      executeCommand(cmd);
+    }
+  } catch {}
+}
+
+function executeCommand(cmd) {
+  console.log('[MDM] Executing command:', cmd.command, cmd.payload);
+  let result = 'ok';
+  let message = '';
+
+  try {
+    switch (cmd.command) {
+      case 'navigate':
+        if (cmd.payload?.url) {
+          if (mdmPeerId && sessionStartTime) reportSessionEnd(mdmPeerId, location.href, sessionStartTime);
+          window.location.href = cmd.payload.url;
+        }
+        break;
+      case 'refresh':
+        window.location.reload();
+        break;
+      case 'lock':
+        enterKioskMode(cmd.payload);
+        break;
+      case 'unlock':
+        exitKioskMode();
+        break;
+      case 'set-policy':
+        applyPolicy(cmd.payload);
+        break;
+      case 'message':
+        showMDMMessage(cmd.payload?.text || cmd.payload);
+        break;
+      case 'restart':
+        window.location.href = window.location.pathname + '#auto';
+        window.location.reload();
+        break;
+      case 'screenshot':
+        captureAndSendScreenshot();
+        break;
+      default:
+        result = 'error';
+        message = 'Unknown command: ' + cmd.command;
+    }
+  } catch (e) {
+    result = 'error';
+    message = e.message;
+  }
+
+  // Acknowledge command execution
+  if (cmd.id && mdmPeerId) {
+    fetch(`/api/devices/${encodeURIComponent(mdmPeerId)}/ack`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commandId: cmd.id, result, message })
+    }).catch(() => {});
+  }
+}
+
+function enterKioskMode(payload) {
+  isKioskLocked = true;
+  let overlay = document.getElementById('kiosk-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'kiosk-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#0D1B2A;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    overlay.innerHTML = '<div style="text-align:center;padding:2rem;">' +
+      '<div style="font-family:Orbitron,sans-serif;font-size:1.5rem;color:#00D4FF;margin-bottom:1rem;">KIOSK MODE</div>' +
+      '<div id="kiosk-message" style="font-family:Share Tech Mono,monospace;color:#8892B0;font-size:1rem;">This device is managed by ImmersivePoint</div>' +
+      '<div id="kiosk-iframe-wrap" style="width:100vw;height:80vh;margin-top:1rem;display:none;"></div>' +
+      '</div>' +
+      '<div id="kiosk-status-bar" style="position:fixed;bottom:0;left:0;right:0;height:24px;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:0.65rem;font-family:Share Tech Mono,monospace;color:#8892B0;z-index:100000;">' +
+      '<span id="kiosk-device-info">Managed Device</span>' +
+      '<span id="kiosk-battery-info"></span>' +
+      '</div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+
+  const deviceInfo = document.getElementById('kiosk-device-info');
+  if (deviceInfo) deviceInfo.textContent = detectDeviceType() + ' · Managed by ImmersivePoint';
+
+  if (payload?.url) {
+    const wrap = document.getElementById('kiosk-iframe-wrap');
+    wrap.innerHTML = '<iframe src="' + payload.url + '" style="width:100%;height:100%;border:none;border-radius:8px;"></iframe>';
+    wrap.style.display = 'block';
+    const msg = document.getElementById('kiosk-message');
+    if (msg) msg.style.display = 'none';
+  }
+
+  // Prevent back navigation
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', kioskPopstateHandler);
+
+  // Update battery in status bar periodically
+  updateKioskBattery();
+  if (!window._kioskBatteryInterval) {
+    window._kioskBatteryInterval = setInterval(updateKioskBattery, 30000);
+  }
+}
+
+function kioskPopstateHandler() {
+  if (isKioskLocked) history.pushState(null, '', location.href);
+}
+
+async function updateKioskBattery() {
+  if (!isKioskLocked) return;
+  const t = await collectTelemetry();
+  const el = document.getElementById('kiosk-battery-info');
+  if (el && t.batteryLevel !== undefined) {
+    el.textContent = 'Battery: ' + t.batteryLevel + '%' + (t.batteryCharging ? ' (charging)' : '');
+  }
+}
+
+function exitKioskMode() {
+  isKioskLocked = false;
+  const overlay = document.getElementById('kiosk-overlay');
+  if (overlay) overlay.style.display = 'none';
+  window.removeEventListener('popstate', kioskPopstateHandler);
+  if (window._kioskBatteryInterval) {
+    clearInterval(window._kioskBatteryInterval);
+    window._kioskBatteryInterval = null;
+  }
+}
+
+function applyPolicy(policy) {
+  if (!policy) return;
+  currentPolicy = policy;
+  if (policy.kioskUrl) {
+    enterKioskMode({ url: policy.kioskUrl });
+  } else {
+    exitKioskMode();
+  }
+}
+
+function showMDMMessage(text) {
+  let banner = document.getElementById('mdm-message-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'mdm-message-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:linear-gradient(135deg,#00D4FF,#7B2FBE);color:white;padding:1rem;text-align:center;font-family:Orbitron,sans-serif;font-size:1.1rem;transform:translateY(-100%);transition:transform 0.3s;';
+    document.body.appendChild(banner);
+  }
+  banner.textContent = text;
+  banner.style.transform = 'translateY(0)';
+  setTimeout(() => {
+    banner.style.transform = 'translateY(-100%)';
+  }, 8000);
+}
+
+function startMDMPolling(peerId) {
+  mdmPeerId = peerId;
+  if (commandPollInterval) clearInterval(commandPollInterval);
+  commandPollInterval = setInterval(() => pollCommands(mdmPeerId), 3000);
+  // Initial poll immediately
+  pollCommands(mdmPeerId);
+}
+
+/* ================================================================
+   AUTO-CONNECT MODE (#auto)
+   ================================================================ */
+
+function initAutoConnect() {
+  const senderView = document.getElementById('sender-view');
+  senderView.style.display = '';
+
+  const senderCard = senderView.querySelector('.sender-card');
+  const roomCodeEl = document.getElementById('sender-room-code');
+  const statusWrap = document.getElementById('sender-status');
+  const statusDot = document.getElementById('sender-status-dot');
+  const statusText = document.getElementById('sender-status-text');
+
+  // Show waiting state
+  senderCard.querySelector('h2').textContent = 'Auto-Connect';
+  roomCodeEl.textContent = '---';
+  statusWrap.style.display = '';
+  statusDot.className = 'status-dot status-dot-pending';
+  statusText.innerHTML = '<span style="display:inline-flex;align-items:center;gap:var(--sp-2);">' +
+    '<span class="auto-connect-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-glow);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>' +
+    'Waiting for Cast Hub...</span>';
+
+  // Add spinner keyframes if not already present
+  if (!document.getElementById('auto-connect-spin-style')) {
+    const style = document.createElement('style');
+    style.id = 'auto-connect-spin-style';
+    style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(style);
+  }
+
+  // Detect device type
+  const deviceType = detectDeviceType();
+  const nameInput = document.getElementById('sender-name');
+  nameInput.value = deviceType;
+
+  // Show MDM badge for managed auto-connect clients
+  const mdmBadge = document.getElementById('mdm-badge');
+  if (mdmBadge) mdmBadge.style.display = 'block';
+
+  // Generate a temporary peer ID for MDM polling before a real peer connection exists
+  const tempPeerId = 'mdm-auto-' + Math.random().toString(36).substr(2, 9);
+  registerDevice(tempPeerId, deviceType, deviceType);
+  startMDMPolling(tempPeerId);
+  console.log('[MDM] Auto-connect MDM polling started with temp ID:', tempPeerId);
+
+  // Poll for active room
+  let pollTimer = null;
+
+  async function checkForRoom() {
     try {
-      peer = new Peer(PEER_CONFIG);
+      const res = await fetch('/api/cast/room');
+      const text = await res.text();
+      console.log('[Auto-Connect] Room poll:', res.status, text);
+
+      if (res.ok && text && text !== 'null') {
+        const data = JSON.parse(text);
+        if (data && data.code) {
+          // Room found — stop polling and connect
+          if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+          console.log('[Auto-Connect] Found active room:', data.code);
+          roomCodeEl.textContent = data.code;
+          senderCard.querySelector('h2').textContent = 'Cast to Hub';
+          statusDot.className = 'status-dot status-dot-pending';
+          statusText.textContent = 'Connecting to room ' + data.code + '...';
+          initSenderView(data.code);
+          return;
+        }
+      }
     } catch (err) {
-      showError('Failed to initialize PeerJS. Retrying...');
-      scheduleReconnect();
+      console.error('[Auto-Connect] Poll error:', err);
+      statusText.innerHTML = '<span style="color:var(--amber);">Cannot reach server — retrying...</span>';
       return;
     }
-
-    peer.on('open', (myPeerId) => {
-      console.log('[Cast Sender] Peer open:', myPeerId);
-      const facilitatorPeerId = `ip-cast-${roomCode}`;
-
-      registerWithMDM(myPeerId, senderName);
-      startHeartbeat(myPeerId);
-      startCommandPoll(myPeerId);
-
-      mediaConn = peer.call(facilitatorPeerId, localStream, {
-        metadata: { name: senderName },
-      });
-
-      if (!mediaConn) {
-        showError('Hub not found. Retrying...');
-        scheduleReconnect();
-        return;
-      }
-
-      mediaConn.on('stream', () => {
-        hideError();
-        setStatus('connected', `Connected as "${senderName}"`);
-      });
-
-      mediaConn.on('close', () => {
-        setStatus('error', 'Disconnected — reconnecting...');
-        destroyPeer();
-        scheduleReconnect();
-      });
-
-      mediaConn.on('error', (err) => {
-        console.error('[Cast Sender] Media error:', err);
-        destroyPeer();
-        scheduleReconnect();
-      });
-
-      setTimeout(() => {
-        if (mediaConn && mediaConn.open) {
-          hideError();
-          setStatus('connected', `Connected as "${senderName}"`);
-        }
-      }, 2000);
-    });
-
-    peer.on('error', (err) => {
-      console.error('[Cast Sender] Peer error:', err);
-      if (err.type === 'peer-unavailable') {
-        setStatus('error', 'Hub not online yet — retrying...');
-      } else if (err.type === 'network' || err.type === 'server-error') {
-        setStatus('error', 'Signaling server unreachable — retrying...');
-      } else {
-        setStatus('error', `Error: ${err.type} — retrying...`);
-      }
-      destroyPeer();
-      scheduleReconnect();
-    });
-
-    peer.on('disconnected', () => {
-      if (!stopped) {
-        setStatus('error', 'Disconnected — reconnecting...');
-        destroyPeer();
-        scheduleReconnect();
-      }
-    });
+    // Still waiting — update status
+    statusDot.className = 'status-dot status-dot-pending';
+    statusText.innerHTML = '<span style="display:inline-flex;align-items:center;gap:var(--sp-2);">' +
+      '<span class="auto-connect-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-glow);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>' +
+      'Waiting for Cast Hub... (server reachable, no active room yet)</span>';
   }
 
-  function scheduleReconnect() {
-    if (stopped || reconnectTimer) return;
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      startCasting();
-    }, 3000);
-  }
-
-  function addRetryButton() {
-    if (document.getElementById('retry-cast-btn')) return;
-    const btn = document.createElement('button');
-    btn.id = 'retry-cast-btn';
-    btn.className = 'btn btn-primary sender-btn';
-    btn.textContent = 'Retry Cast';
-    btn.style.marginTop = 'var(--sp-3)';
-    btn.addEventListener('click', () => {
-      btn.remove();
-      startCasting();
-    });
-    stopBtn.parentNode.insertBefore(btn, stopBtn.nextSibling);
-  }
-
-  function destroyPeer() {
-    if (mediaConn) {
-      try { mediaConn.close(); } catch { /* noop */ }
-      mediaConn = null;
-    }
-    if (peer) {
-      try { peer.destroy(); } catch { /* noop */ }
-      peer = null;
-    }
-  }
-
-  stopBtn.addEventListener('click', () => {
-    cleanup(true);
-  });
-
-  function cleanup(fullStop) {
-    stopped = !!fullStop;
-    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-    stopMDM();
-
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
-    }
-    destroyPeer();
-
-    previewVideo.srcObject = null;
-    previewWrap.style.display = 'none';
-    stopBtn.style.display = 'none';
-    nameInput.disabled = false;
-
-    if (stopped) {
-      setStatus('error', 'Casting stopped');
-      addRetryButton();
-    }
-  }
-
-  // Auto-start casting on page load
-  startCasting();
+  // Initial check, then poll every 5 seconds
+  checkForRoom();
+  pollTimer = setInterval(checkForRoom, 5000);
 }
 </script>
 </body>

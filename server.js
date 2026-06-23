@@ -312,15 +312,11 @@ setInterval(() => {
   }
 }, 15000);
 
-// ── Express app (used for PeerJS + raw handler fallback) ───────────
+// ── Express app (PeerJS requires Express for signaling) ────────────
 const app = express();
-
-// ── HTTP Server ─────────────────────────────────────────────────────
 const server = http.createServer(app);
 
-// All non-PeerJS requests handled by this catch-all middleware
 app.use(async (req, res, next) => {
-  // Let PeerJS routes pass through to Express (handled by mounted peerServer)
   if (req.url && req.url.startsWith('/peerjs/')) { return next(); }
 
   const parsed = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -969,6 +965,11 @@ app.use(async (req, res, next) => {
     if (!urlPath.startsWith('/overlay/')) {
       headers['X-Frame-Options'] = 'DENY';
     }
+    if (ext === '.html') {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      headers['Pragma'] = 'no-cache';
+      headers['Expires'] = '0';
+    }
     headers['Access-Control-Allow-Origin'] = '*';
     res.writeHead(200, headers);
     res.end(data);
@@ -991,6 +992,7 @@ peerServer.on('connection', (client) => {
 
 peerServer.on('disconnect', (client) => {
   console.log(`[PeerJS] Peer disconnected: ${client.getId()}`);
+  // Don't remove from registry — let heartbeat timeout handle staleness
 });
 
 server.listen(PORT, () => {

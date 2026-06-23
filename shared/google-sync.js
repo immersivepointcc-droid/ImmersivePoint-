@@ -16,7 +16,7 @@
 const STORAGE_KEY = 'ip_google_script_url';
 
 /** Request timeout in milliseconds. */
-const TIMEOUT_MS = 10_000;
+const TIMEOUT_MS = 30_000;
 
 /** Valid sheet keys accepted by the Apps Script backend. */
 const VALID_SHEETS = [
@@ -120,12 +120,16 @@ export class GoogleSync {
     const url = `${base}?${params.toString()}`;
 
     try {
-      const res = await fetchWithTimeout(url, { mode: 'cors' });
-      const json = await res.json();
+      console.log('[GoogleSync] GET', url);
+      const res = await fetchWithTimeout(url, { redirect: 'follow' });
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch { return err('Invalid JSON response: ' + text.slice(0, 200)); }
       if (!res.ok) return err(json.error || `HTTP ${res.status}`);
       return ok(json.data !== undefined ? json.data : json);
     } catch (e) {
-      if (e.name === 'AbortError') return err('Request timed out');
+      console.error('[GoogleSync] GET failed:', e);
+      if (e.name === 'AbortError') return err('Request timed out (30s). The Apps Script may be cold-starting — try again.');
       return err(e.message || 'Network error');
     }
   }
@@ -146,17 +150,21 @@ export class GoogleSync {
     const url = `${base}?${params.toString()}`;
 
     try {
+      console.log('[GoogleSync] POST', url);
       const res = await fetchWithTimeout(url, {
         method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json' },
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(body),
       });
-      const json = await res.json();
+      const text = await res.text();
+      let json;
+      try { json = JSON.parse(text); } catch { return err('Invalid JSON response: ' + text.slice(0, 200)); }
       if (!res.ok) return err(json.error || `HTTP ${res.status}`);
       return ok(json.data !== undefined ? json.data : json);
     } catch (e) {
-      if (e.name === 'AbortError') return err('Request timed out');
+      console.error('[GoogleSync] POST failed:', e);
+      if (e.name === 'AbortError') return err('Request timed out (30s). The Apps Script may be cold-starting — try again.');
       return err(e.message || 'Network error');
     }
   }

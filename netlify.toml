@@ -37,6 +37,11 @@
   status = 200
 
 [[redirects]]
+  from = "/mobile-ops/*"
+  to = "/mobile-ops/index.html"
+  status = 200
+
+[[redirects]]
   from = "/cast/*"
   to = "/cast/index.html"
   status = 200
