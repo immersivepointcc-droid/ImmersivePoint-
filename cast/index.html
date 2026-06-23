@@ -1763,6 +1763,88 @@ function initSenderView(roomCode) {
   let localStream = null;
   let reconnectTimer = null;
   let stopped = false;
+  let mdmPeerId = null;
+  let heartbeatInterval = null;
+  let commandPollInterval = null;
+
+  const API_BASE = `${location.protocol}//${location.hostname}:${location.port || 3000}`;
+
+  function detectDeviceType() {
+    const ua = navigator.userAgent;
+    if (/OculusBrowser|Quest/i.test(ua)) return 'Meta Quest';
+    if (/ViveBrowser|VIVE/i.test(ua)) return 'Vive Focus';
+    if (/Pico/i.test(ua)) return 'Pico';
+    if (/Android/i.test(ua)) return 'Android';
+    if (/iPad|iPhone/i.test(ua)) return 'iOS';
+    return 'Browser';
+  }
+
+  async function registerWithMDM(peerId, deviceName) {
+    mdmPeerId = peerId;
+    try {
+      await fetch(`${API_BASE}/api/devices/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          peerId,
+          name: deviceName,
+          type: detectDeviceType(),
+          policyId: 'default',
+          currentUrl: location.href,
+          browserVersion: navigator.userAgent.slice(0, 120),
+        })
+      });
+      console.log('[MDM] Registered:', peerId);
+    } catch (e) { console.warn('[MDM] Register failed:', e.message); }
+  }
+
+  function startHeartbeat(peerId) {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(async () => {
+      try {
+        await fetch(`${API_BASE}/api/devices/heartbeat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            peerId,
+            currentUrl: location.href,
+            batteryLevel: navigator.getBattery ? await navigator.getBattery().then(b => Math.round(b.level * 100)).catch(() => null) : null,
+          })
+        });
+      } catch { /* silent */ }
+    }, 10_000);
+  }
+
+  function startCommandPoll(peerId) {
+    if (commandPollInterval) clearInterval(commandPollInterval);
+    commandPollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/devices/${encodeURIComponent(peerId)}/commands`);
+        const cmds = await res.json();
+        for (const cmd of cmds) {
+          console.log('[MDM] Command:', cmd.command, cmd.payload);
+          if (cmd.command === 'navigate' && cmd.payload?.url) {
+            location.href = cmd.payload.url;
+          } else if (cmd.command === 'refresh') {
+            location.reload();
+          } else if (cmd.command === 'message' && cmd.payload?.text) {
+            showError(`📢 ${cmd.payload.text}`);
+            setTimeout(hideError, 8000);
+          }
+          fetch(`${API_BASE}/api/devices/${encodeURIComponent(peerId)}/ack`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ commandId: cmd.id, result: 'ok' })
+          }).catch(() => {});
+        }
+      } catch { /* silent */ }
+    }, 5_000);
+  }
+
+  function stopMDM() {
+    if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
+    if (commandPollInterval) { clearInterval(commandPollInterval); commandPollInterval = null; }
+  }
 
   function setStatus(state, text) {
     statusWrap.style.display = '';
@@ -1844,6 +1926,10 @@ function initSenderView(roomCode) {
     peer.on('open', (myPeerId) => {
       console.log('[Cast Sender] Peer open:', myPeerId);
       const facilitatorPeerId = `ip-cast-${roomCode}`;
+
+      registerWithMDM(myPeerId, senderName);
+      startHeartbeat(myPeerId);
+      startCommandPoll(myPeerId);
 
       mediaConn = peer.call(facilitatorPeerId, localStream, {
         metadata: { name: senderName },
@@ -1942,6 +2028,7 @@ function initSenderView(roomCode) {
   function cleanup(fullStop) {
     stopped = !!fullStop;
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    stopMDM();
 
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
