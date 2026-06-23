@@ -1321,6 +1321,14 @@ async function initFacilitatorView() {
     bcClock.value = '';
   });
 
+  // Register room immediately so headsets can discover it via auto-connect
+  fetch('/api/cast/room', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: roomCode, facilitatorPeerId: `ip-cast-${roomCode}` })
+  }).then(() => console.log('[Cast Hub] Room registered:', roomCode))
+    .catch(() => console.warn('[Cast Hub] Failed to register room'));
+
   // Initialize PeerJS as facilitator
   initFacilitatorPeer(roomCode);
 }
