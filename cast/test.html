@@ -80,11 +80,11 @@ function out(cls, msg) { log.innerHTML += `<span class="${cls}">${msg}</span>\n`
     out('error', `[FAIL] PeerJS WebSocket: ${e.message}`);
   }
 
-  // Test 6: getDisplayMedia support
+  // Test 6: getDisplayMedia support (informational only — not required)
   if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-    out('pass', '[PASS] getDisplayMedia supported (screen casting available)');
+    out('pass', '[INFO] getDisplayMedia supported (not used — native casting is used instead)');
   } else {
-    out('fail', '[WARN] getDisplayMedia NOT supported - screen casting will not work on this browser');
+    out('pass', '[OK] getDisplayMedia not supported — this is FINE. ImmersivePoint uses Quest native casting, not browser screen capture.');
   }
 
   out('', '');
