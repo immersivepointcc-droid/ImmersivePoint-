@@ -965,6 +965,11 @@ app.use(async (req, res, next) => {
     if (!urlPath.startsWith('/overlay/')) {
       headers['X-Frame-Options'] = 'DENY';
     }
+    if (ext === '.html') {
+      headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      headers['Pragma'] = 'no-cache';
+      headers['Expires'] = '0';
+    }
     headers['Access-Control-Allow-Origin'] = '*';
     res.writeHead(200, headers);
     res.end(data);
