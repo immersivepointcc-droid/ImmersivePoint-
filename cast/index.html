@@ -1087,7 +1087,8 @@
       <input type="text" id="sender-name" class="input" placeholder="e.g. Headset 1, Student A" maxlength="30" autocomplete="off" />
     </div>
 
-    <button class="btn btn-danger sender-btn" id="stop-cast-btn" style="display:none">Stop Casting</button>
+    <button class="btn btn-primary sender-btn" id="register-btn">Connect to MDM</button>
+    <button class="btn btn-danger sender-btn" id="disconnect-btn" style="display:none">Disconnect</button>
 
     <div class="sender-status" id="sender-status" style="display:none">
       <span class="status-dot" id="sender-status-dot"></span>
@@ -1095,12 +1096,20 @@
     </div>
 
     <div class="sender-error" id="sender-error" style="display:none"></div>
-  </div>
 
-  <!-- Preview (shown when casting) -->
-  <div class="sender-preview-wrap" id="sender-preview" style="display:none">
-    <video id="sender-preview-video" autoplay muted playsinline></video>
-    <div class="sender-preview-label">Your Cast Preview</div>
+    <!-- Native Cast Instructions -->
+    <div id="native-cast-info" style="display:none;margin-top:var(--sp-4);padding:var(--sp-4);background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.15);border-radius:8px;text-align:left;">
+      <div style="font-family:Orbitron,sans-serif;font-size:0.85rem;color:var(--cyan-glow);margin-bottom:var(--sp-2);">Native Cast Setup</div>
+      <ol style="font-size:0.8rem;color:var(--ink-dim);line-height:1.6;padding-left:1.2rem;margin:0;">
+        <li><b>Meta Quest:</b> Quick Settings → Cast → select laptop or "Computer"</li>
+        <li><b>Vive Focus:</b> Settings → Cast → Mirror to Computer</li>
+        <li><b>Pico:</b> Settings → Lab → Screencast</li>
+      </ol>
+      <div style="font-size:0.75rem;color:var(--ink-faint);margin-top:var(--sp-2);">
+        The facilitator captures your cast window in OBS as a source.<br>
+        This device is registered with MDM — the facilitator can send commands.
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2123,20 +2132,16 @@ function initSenderView(roomCode) {
   document.getElementById('sender-room-code').textContent = roomCode;
 
   const nameInput = document.getElementById('sender-name');
-  const stopBtn = document.getElementById('stop-cast-btn');
+  const registerBtn = document.getElementById('register-btn');
+  const disconnectBtn = document.getElementById('disconnect-btn');
   const statusWrap = document.getElementById('sender-status');
   const statusDot = document.getElementById('sender-status-dot');
   const statusText = document.getElementById('sender-status-text');
   const errorEl = document.getElementById('sender-error');
-  const previewWrap = document.getElementById('sender-preview');
-  const previewVideo = document.getElementById('sender-preview-video');
+  const nativeCastInfo = document.getElementById('native-cast-info');
 
-  let peer = null;
-  let mediaConn = null;
+  let mdmActive = false;
   let localStream = null;
-  let reconnectTimer = null;
-  let stopped = false;
-
   function setStatus(state, text) {
     statusWrap.style.display = '';
     statusText.textContent = text;
@@ -2153,196 +2158,46 @@ function initSenderView(roomCode) {
 
   function hideError() { errorEl.style.display = 'none'; }
 
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-    showError('Screen sharing is not supported in this browser. Use Quest Browser (Meta Quest) or Vive Browser (Vive Focus 3).');
-    return;
-  }
-
   function getSenderName() {
-    return nameInput.value.trim() || 'VR Headset';
+    return nameInput.value.trim() || detectDeviceType();
   }
 
-  async function startCasting() {
-    if (stopped) return;
+  function connectMDM() {
+    const deviceName = getSenderName();
+    const peerId = 'headset-' + Math.random().toString(36).substr(2, 9);
+
+    setStatus('connecting', 'Registering with MDM...');
+    registerDevice(peerId, deviceName, detectDeviceType());
+    startDeviceHeartbeat(peerId);
+    startMDMPolling(peerId);
+
+    mdmActive = true;
+    nameInput.disabled = true;
+    registerBtn.style.display = 'none';
+    disconnectBtn.style.display = '';
+    if (nativeCastInfo) nativeCastInfo.style.display = '';
+
+    setStatus('connected', `Connected as "${deviceName}"`);
     hideError();
-    const senderName = getSenderName();
-
-    if (!localStream) {
-      try {
-        setStatus('connecting', 'Requesting screen capture...');
-        localStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
-          audio: true,
-        });
-      } catch (err) {
-        console.error('[Cast] getDisplayMedia error:', err);
-        if (err.name === 'NotAllowedError') {
-          showError('Screen sharing was denied. Tap the button below to retry.');
-          setStatus('error', 'Permission denied');
-          addRetryButton();
-        } else {
-          showError(`Screen capture failed: ${err.message}`);
-          scheduleReconnect();
-        }
-        return;
-      }
-
-      previewVideo.srcObject = localStream;
-      previewWrap.style.display = '';
-      stopBtn.style.display = '';
-      nameInput.disabled = true;
-
-      localStream.getVideoTracks().forEach(track => {
-        track.addEventListener('ended', () => {
-          cleanup(true);
-        });
-      });
-    }
-
-    connectToPeer(senderName);
+    console.log('[MDM] Headset registered:', peerId, deviceName);
   }
 
-  function connectToPeer(senderName) {
-    if (stopped || !localStream) return;
-    setStatus('connecting', 'Connecting to Cast Hub...');
-
-    try {
-      peer = new Peer(PEER_CONFIG);
-    } catch (err) {
-      showError('Failed to initialize PeerJS. Retrying...');
-      scheduleReconnect();
-      return;
-    }
-
-    peer.on('open', (myPeerId) => {
-      console.log('[Cast Sender] Peer open:', myPeerId);
-      const facilitatorPeerId = `ip-cast-${roomCode}`;
-
-      registerDevice(myPeerId, senderName, detectDeviceType());
-      startDeviceHeartbeat(myPeerId);
-      startMDMPolling(myPeerId);
-
-      mediaConn = peer.call(facilitatorPeerId, localStream, {
-        metadata: { name: senderName },
-      });
-
-      if (!mediaConn) {
-        showError('Hub not found. Retrying...');
-        scheduleReconnect();
-        return;
-      }
-
-      mediaConn.on('stream', () => {
-        hideError();
-        setStatus('connected', `Connected as "${senderName}"`);
-      });
-
-      mediaConn.on('close', () => {
-        setStatus('error', 'Disconnected — reconnecting...');
-        destroyPeer();
-        scheduleReconnect();
-      });
-
-      mediaConn.on('error', (err) => {
-        console.error('[Cast Sender] Media error:', err);
-        destroyPeer();
-        scheduleReconnect();
-      });
-
-      setTimeout(() => {
-        if (mediaConn && mediaConn.open) {
-          hideError();
-          setStatus('connected', `Connected as "${senderName}"`);
-          // Start session tracking once connected
-          reportSessionStart(myPeerId, location.href);
-        }
-      }, 2000);
-    });
-
-    peer.on('error', (err) => {
-      console.error('[Cast Sender] Peer error:', err);
-      if (err.type === 'peer-unavailable') {
-        setStatus('error', 'Hub not online yet — retrying...');
-      } else if (err.type === 'network' || err.type === 'server-error') {
-        setStatus('error', 'Signaling server unreachable — retrying...');
-      } else {
-        setStatus('error', `Error: ${err.type} — retrying...`);
-      }
-      destroyPeer();
-      scheduleReconnect();
-    });
-
-    peer.on('disconnected', () => {
-      if (!stopped) {
-        setStatus('error', 'Disconnected — reconnecting...');
-        destroyPeer();
-        scheduleReconnect();
-      }
-    });
-  }
-
-  function scheduleReconnect() {
-    if (stopped || reconnectTimer) return;
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-      startCasting();
-    }, 3000);
-  }
-
-  function addRetryButton() {
-    if (document.getElementById('retry-cast-btn')) return;
-    const btn = document.createElement('button');
-    btn.id = 'retry-cast-btn';
-    btn.className = 'btn btn-primary sender-btn';
-    btn.textContent = 'Retry Cast';
-    btn.style.marginTop = 'var(--sp-3)';
-    btn.addEventListener('click', () => {
-      btn.remove();
-      startCasting();
-    });
-    stopBtn.parentNode.insertBefore(btn, stopBtn.nextSibling);
-  }
-
-  function destroyPeer() {
-    if (mediaConn) {
-      try { mediaConn.close(); } catch { /* noop */ }
-      mediaConn = null;
-    }
-    if (peer) {
-      try { peer.destroy(); } catch { /* noop */ }
-      peer = null;
-    }
-  }
-
-  stopBtn.addEventListener('click', () => {
-    cleanup(true);
-  });
-
-  function cleanup(fullStop) {
-    stopped = !!fullStop;
-    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+  function disconnectMDM() {
+    mdmActive = false;
     if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
     if (commandPollInterval) { clearInterval(commandPollInterval); commandPollInterval = null; }
-
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
-    }
-    destroyPeer();
-
-    previewVideo.srcObject = null;
-    previewWrap.style.display = 'none';
-    stopBtn.style.display = 'none';
     nameInput.disabled = false;
-
-    if (stopped) {
-      setStatus('error', 'Casting stopped');
-      addRetryButton();
-    }
+    registerBtn.style.display = '';
+    disconnectBtn.style.display = 'none';
+    if (nativeCastInfo) nativeCastInfo.style.display = 'none';
+    setStatus('error', 'Disconnected from MDM');
   }
 
-  // Auto-start casting on page load
-  startCasting();
+  registerBtn.addEventListener('click', connectMDM);
+  disconnectBtn.addEventListener('click', disconnectMDM);
+
+  // Auto-connect on page load (for #auto mode and room-code joins)
+  connectMDM();
 }
 
 /* ================================================================
