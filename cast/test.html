@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cast Connection Test</title>
+<style>
+  body { background: #0D1B2A; color: #CCD6F6; font-family: monospace; padding: 2rem; font-size: 1.1rem; }
+  .pass { color: #00D4FF; } .fail { color: #F59E0B; } .error { color: #FF6B6B; }
+  #log { white-space: pre-wrap; line-height: 1.8; }
+  h1 { color: #00D4FF; font-size: 1.3rem; }
+</style>
+</head>
+<body>
+<h1>ImmersivePoint Cast Connection Test</h1>
+<div id="log">Running tests...\n</div>
+<script>
+const log = document.getElementById('log');
+function out(cls, msg) { log.innerHTML += `<span class="${cls}">${msg}</span>\n`; }
+
+(async () => {
+  const base = location.origin;
+  out('', `Server: ${base}`);
+  out('', `User-Agent: ${navigator.userAgent.slice(0, 80)}`);
+  out('', '');
+
+  // Test 1: Can we reach the API?
+  try {
+    const r = await fetch(`${base}/api/devices`);
+    const d = await r.json();
+    out('pass', `[PASS] API reachable - ${d.length} devices registered`);
+  } catch (e) {
+    out('error', `[FAIL] Cannot reach API: ${e.message}`);
+  }
+
+  // Test 2: Can we reach the room endpoint?
+  try {
+    const r = await fetch(`${base}/api/cast/room`);
+    const t = await r.text();
+    if (t === 'null' || !t) {
+      out('fail', `[WARN] No active room (facilitator Cast Hub not open)`);
+    } else {
+      const d = JSON.parse(t);
+      out('pass', `[PASS] Active room: ${d.code}`);
+    }
+  } catch (e) {
+    out('error', `[FAIL] Cannot reach room API: ${e.message}`);
+  }
+
+  // Test 3: Can we register a device?
+  try {
+    const testId = 'test-' + Date.now();
+    const r = await fetch(`${base}/api/devices/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ peerId: testId, name: 'Connection Test', type: 'Test' })
+    });
+    const d = await r.json();
+    out(d.ok ? 'pass' : 'error', d.ok ? `[PASS] Device registration works (${testId})` : `[FAIL] Registration: ${JSON.stringify(d)}`);
+  } catch (e) {
+    out('error', `[FAIL] Cannot register device: ${e.message}`);
+  }
+
+  // Test 4: PeerJS HTTP endpoint
+  try {
+    const r = await fetch(`${base}/peerjs/peerjs/id`);
+    const id = await r.text();
+    out('pass', `[PASS] PeerJS reachable - generated ID: ${id.slice(0, 8)}...`);
+  } catch (e) {
+    out('error', `[FAIL] PeerJS unreachable: ${e.message}`);
+  }
+
+  // Test 5: PeerJS WebSocket
+  try {
+    await new Promise((resolve, reject) => {
+      const ws = new WebSocket(`ws://${location.host}/peerjs/peerjs?key=peerjs&id=ws-test-${Date.now()}&token=t`);
+      ws.onopen = () => { out('pass', '[PASS] PeerJS WebSocket connects'); ws.close(); resolve(); };
+      ws.onerror = () => { reject(new Error('WebSocket failed')); };
+      setTimeout(() => reject(new Error('Timeout')), 5000);
+    });
+  } catch (e) {
+    out('error', `[FAIL] PeerJS WebSocket: ${e.message}`);
+  }
+
+  // Test 6: getDisplayMedia support
+  if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+    out('pass', '[PASS] getDisplayMedia supported (screen casting available)');
+  } else {
+    out('fail', '[WARN] getDisplayMedia NOT supported - screen casting will not work on this browser');
+  }
+
+  out('', '');
+  out('', 'Tests complete. Share these results to diagnose issues.');
+})();
+</script>
+</body>
+</html>

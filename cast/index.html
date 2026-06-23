@@ -2571,8 +2571,11 @@ function initAutoConnect() {
   async function checkForRoom() {
     try {
       const res = await fetch('/api/cast/room');
-      if (res.ok) {
-        const data = await res.json();
+      const text = await res.text();
+      console.log('[Auto-Connect] Room poll:', res.status, text);
+
+      if (res.ok && text && text !== 'null') {
+        const data = JSON.parse(text);
         if (data && data.code) {
           // Room found — stop polling and connect
           if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
@@ -2580,19 +2583,21 @@ function initAutoConnect() {
           roomCodeEl.textContent = data.code;
           senderCard.querySelector('h2').textContent = 'Cast to Hub';
           statusDot.className = 'status-dot status-dot-pending';
-          statusText.textContent = 'Connecting...';
+          statusText.textContent = 'Connecting to room ' + data.code + '...';
           initSenderView(data.code);
           return;
         }
       }
-    } catch {
-      // Server not reachable, keep polling
+    } catch (err) {
+      console.error('[Auto-Connect] Poll error:', err);
+      statusText.innerHTML = '<span style="color:var(--amber);">Cannot reach server — retrying...</span>';
+      return;
     }
     // Still waiting — update status
     statusDot.className = 'status-dot status-dot-pending';
     statusText.innerHTML = '<span style="display:inline-flex;align-items:center;gap:var(--sp-2);">' +
       '<span class="auto-connect-spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--cyan-glow);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>' +
-      'Waiting for Cast Hub...</span>';
+      'Waiting for Cast Hub... (server reachable, no active room yet)</span>';
   }
 
   // Initial check, then poll every 5 seconds
