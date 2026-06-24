@@ -4,6 +4,7 @@
  */
 
 import { buildCNCShopScene, buildServerRoomScene, buildWarehouseScene, buildOutdoorSiteScene } from './vignettes-industrial.js';
+import { buildDesignStudioScene, buildCommunityCenterScene, buildBiotechLabScene, buildStartupOfficeScene } from './vignettes-professional.js';
 
 const ENV_PRESETS = {
   welding:    { preset: 'threetowers', skyType: 'gradient', skyColor: '#111424', horizonColor: '#2b314d', lighting: 'none', fog: 0.7 },
@@ -432,6 +433,10 @@ function buildVignetteScene(question) {
     case 'server':    return buildServerRoomScene();
     case 'warehouse': return buildWarehouseScene();
     case 'outdoor':   return buildOutdoorSiteScene();
+    case 'studio':    return buildDesignStudioScene();
+    case 'community': return buildCommunityCenterScene();
+    case 'lab':       return buildBiotechLabScene();
+    case 'startup':   return buildStartupOfficeScene();
     default:          return buildGenericScene(question.environment, question);
   }
 }
