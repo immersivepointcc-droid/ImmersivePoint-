@@ -1,3 +1,2 @@
 [build]
-  publish = "/opt/build/repo"
   command = "echo 'Static site — no build needed'"
