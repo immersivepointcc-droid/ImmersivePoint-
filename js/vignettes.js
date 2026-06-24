@@ -1,8 +1,9 @@
 /**
  * Vignette renderer — builds A-Frame scenes for each RIASEC question.
- * Welding bay and clinic floor are fully detailed; others use generated layouts
- * with environment-component backdrops.
+ * Detailed vignettes for all 10 environments; generic fallback for any future additions.
  */
+
+import { buildCNCShopScene, buildServerRoomScene, buildWarehouseScene, buildOutdoorSiteScene } from './vignettes-industrial.js';
 
 const ENV_PRESETS = {
   welding:    { preset: 'threetowers', skyType: 'gradient', skyColor: '#111424', horizonColor: '#2b314d', lighting: 'none', fog: 0.7 },
@@ -424,9 +425,15 @@ function buildGenericScene(env, question) {
 }
 
 function buildVignetteScene(question) {
-  if (question.environment === 'welding') return buildWeldingBayScene();
-  if (question.environment === 'clinic') return buildClinicFloorScene();
-  return buildGenericScene(question.environment, question);
+  switch (question.environment) {
+    case 'welding':   return buildWeldingBayScene();
+    case 'clinic':    return buildClinicFloorScene();
+    case 'cnc':       return buildCNCShopScene();
+    case 'server':    return buildServerRoomScene();
+    case 'warehouse': return buildWarehouseScene();
+    case 'outdoor':   return buildOutdoorSiteScene();
+    default:          return buildGenericScene(question.environment, question);
+  }
 }
 
 export { buildVignetteScene, ENV_PRESETS };
