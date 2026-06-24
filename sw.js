@@ -1,4 +1,4 @@
-const CACHE_NAME = 'imagination-spark-xr-v2';
+const CACHE_NAME = 'imagination-spark-xr-v3';
 
 const PRECACHE_URLS = [
   '/',
@@ -6,6 +6,8 @@ const PRECACHE_URLS = [
   '/js/app.js',
   '/js/riasec-engine.js',
   '/js/vignettes.js',
+  '/js/vignettes-industrial.js',
+  '/js/vignettes-professional.js',
   '/js/passport.js',
   '/styles.css',
   'https://aframe.io/releases/1.6.0/aframe.min.js',

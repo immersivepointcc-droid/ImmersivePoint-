@@ -11,9 +11,6 @@ let fuseAnimFrame = null;
 let fuseStartTime = 0;
 const FUSE_DURATION = 2000;
 
-// ---------------------------------------------------------------------------
-// XR detection
-// ---------------------------------------------------------------------------
 async function detectXR() {
   if (!navigator.xr) return false;
   try {
@@ -23,9 +20,6 @@ async function detectXR() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
 function init() {
   detectXR().then(supported => {
     isXR = supported;
@@ -42,9 +36,6 @@ function init() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Ground reference grid (VR comfort)
-// ---------------------------------------------------------------------------
 function buildGroundGrid() {
   const gridEl = document.getElementById('xr-grid-lines');
   if (!gridEl) return;
@@ -71,9 +62,6 @@ function buildGroundGrid() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Comfort fade (fade-to-black between scenes — prevents VR sickness)
-// ---------------------------------------------------------------------------
 function comfortFade(callback) {
   const vignette = document.getElementById('xr-vignette');
   if (!vignette || !xrActive) {
@@ -93,9 +81,6 @@ function comfortFade(callback) {
   }, 350);
 }
 
-// ---------------------------------------------------------------------------
-// Fuse ring animation (visual countdown on gaze dwell)
-// ---------------------------------------------------------------------------
 function startFuseAnim() {
   const ring = document.getElementById('xr-fuse-ring');
   if (!ring) return;
@@ -128,9 +113,6 @@ function stopFuseAnim() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 3D HUD updates
-// ---------------------------------------------------------------------------
 function updateXRHud(question) {
   const hud = document.getElementById('xr-hud');
   const qPanel = document.getElementById('xr-question-panel');
@@ -172,9 +154,6 @@ function showXRLoading() {
   if (loading) loading.setAttribute('visible', true);
 }
 
-// ---------------------------------------------------------------------------
-// XR scene events
-// ---------------------------------------------------------------------------
 function wireXREvents() {
   const scene = document.getElementById('aframe-scene');
   const enterBtn = document.getElementById('xr-enter-btn');
@@ -216,9 +195,6 @@ function wireXREvents() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Welcome
-// ---------------------------------------------------------------------------
 function showWelcome() {
   hideXRHud();
   const container = document.getElementById('app-ui');
@@ -244,9 +220,6 @@ function showWelcome() {
   `;
 }
 
-// ---------------------------------------------------------------------------
-// Assessment flow
-// ---------------------------------------------------------------------------
 function startAssessment() {
   engine.reset();
   loadQuestion(0);
@@ -267,9 +240,6 @@ function loadQuestion(index) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// XR vignette loader (spatial scene with gaze interaction)
-// ---------------------------------------------------------------------------
 function loadXRVignette(question) {
   const scene = document.getElementById('aframe-scene');
   const sceneContent = document.getElementById('scene-content');
@@ -353,9 +323,6 @@ function handleSpatialChoice(question, targetId) {
   setTimeout(() => loadQuestion(engine.questionIndex), 700);
 }
 
-// ---------------------------------------------------------------------------
-// 2D card fallback
-// ---------------------------------------------------------------------------
 function load2DCard(question) {
   const scene = document.getElementById('aframe-scene');
   scene.style.display = 'none';
@@ -398,9 +365,6 @@ function load2DCard(question) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Results
-// ---------------------------------------------------------------------------
 function showResults() {
   const scene = document.getElementById('aframe-scene');
   scene.style.display = 'none';
