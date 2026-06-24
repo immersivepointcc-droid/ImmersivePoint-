@@ -1,8 +1,3 @@
-/**
- * Imagination Spark XR — Main application controller.
- * Detects XR capability and renders spatial vignettes or 2D card fallback.
- */
-
 import { RIASECEngine, VIGNETTE_QUESTIONS, DIMENSION_LABELS } from './riasec-engine.js';
 import { buildVignetteScene } from './vignettes.js';
 import { DigitalPassport } from './passport.js';
@@ -11,8 +6,14 @@ const engine = new RIASECEngine();
 const passport = new DigitalPassport();
 
 let isXR = false;
-let currentScene = null;
+let xrActive = false;
+let fuseAnimFrame = null;
+let fuseStartTime = 0;
+const FUSE_DURATION = 2000;
 
+// ---------------------------------------------------------------------------
+// XR detection
+// ---------------------------------------------------------------------------
 async function detectXR() {
   if (!navigator.xr) return false;
   try {
@@ -22,15 +23,204 @@ async function detectXR() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
 function init() {
   detectXR().then(supported => {
     isXR = supported;
     document.body.setAttribute('data-mode', isXR ? 'xr' : '2d');
+
+    if (isXR) {
+      const btn = document.getElementById('xr-enter-btn');
+      if (btn) btn.style.display = 'block';
+    }
+
+    buildGroundGrid();
+    wireXREvents();
     showWelcome();
   });
 }
 
+// ---------------------------------------------------------------------------
+// Ground reference grid (VR comfort)
+// ---------------------------------------------------------------------------
+function buildGroundGrid() {
+  const gridEl = document.getElementById('xr-grid-lines');
+  if (!gridEl) return;
+
+  for (let r = 1; r <= 7; r++) {
+    const ring = document.createElement('a-ring');
+    ring.setAttribute('position', '0 0.015 0');
+    ring.setAttribute('rotation', '-90 0 0');
+    ring.setAttribute('radius-inner', r - 0.01);
+    ring.setAttribute('radius-outer', r + 0.01);
+    ring.setAttribute('material', `color: #f0a830; opacity: ${0.12 - r * 0.012}; shader: flat; transparent: true`);
+    ring.setAttribute('segments-theta', '64');
+    gridEl.appendChild(ring);
+  }
+
+  for (let a = 0; a < 360; a += 30) {
+    const line = document.createElement('a-plane');
+    line.setAttribute('position', '0 0.015 0');
+    line.setAttribute('rotation', `-90 ${a} 0`);
+    line.setAttribute('width', '0.008');
+    line.setAttribute('height', '7');
+    line.setAttribute('material', 'color: #f0a830; opacity: 0.05; shader: flat; transparent: true; side: double');
+    gridEl.appendChild(line);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Comfort fade (fade-to-black between scenes — prevents VR sickness)
+// ---------------------------------------------------------------------------
+function comfortFade(callback) {
+  const vignette = document.getElementById('xr-vignette');
+  if (!vignette || !xrActive) {
+    if (callback) callback();
+    return;
+  }
+
+  vignette.setAttribute('animation__fadein',
+    'property: material.opacity; from: 0; to: 1; dur: 300; easing: easeInQuad');
+
+  setTimeout(() => {
+    if (callback) callback();
+    setTimeout(() => {
+      vignette.setAttribute('animation__fadeout',
+        'property: material.opacity; from: 1; to: 0; dur: 400; easing: easeOutQuad');
+    }, 100);
+  }, 350);
+}
+
+// ---------------------------------------------------------------------------
+// Fuse ring animation (visual countdown on gaze dwell)
+// ---------------------------------------------------------------------------
+function startFuseAnim() {
+  const ring = document.getElementById('xr-fuse-ring');
+  if (!ring) return;
+  ring.setAttribute('visible', true);
+  fuseStartTime = performance.now();
+
+  function animate() {
+    const elapsed = performance.now() - fuseStartTime;
+    const progress = Math.min(elapsed / FUSE_DURATION, 1);
+    ring.setAttribute('geometry',
+      `primitive: ring; radiusInner: 0.006; radiusOuter: 0.012; thetaLength: ${progress * 360}`);
+
+    const color = progress < 0.5 ? '#f0a830' : '#40c080';
+    ring.setAttribute('material', `color: ${color}; shader: flat; opacity: 0.8; transparent: true; side: double`);
+
+    if (progress < 1) fuseAnimFrame = requestAnimationFrame(animate);
+  }
+  fuseAnimFrame = requestAnimationFrame(animate);
+}
+
+function stopFuseAnim() {
+  if (fuseAnimFrame) {
+    cancelAnimationFrame(fuseAnimFrame);
+    fuseAnimFrame = null;
+  }
+  const ring = document.getElementById('xr-fuse-ring');
+  if (ring) {
+    ring.setAttribute('visible', false);
+    ring.setAttribute('geometry', 'primitive: ring; radiusInner: 0.006; radiusOuter: 0.012; thetaLength: 0');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3D HUD updates
+// ---------------------------------------------------------------------------
+function updateXRHud(question) {
+  const hud = document.getElementById('xr-hud');
+  const qPanel = document.getElementById('xr-question-panel');
+  if (!hud) return;
+
+  hud.setAttribute('visible', true);
+  if (qPanel) qPanel.setAttribute('visible', true);
+
+  const counter = document.getElementById('xr-hud-counter');
+  if (counter) counter.setAttribute('value', `${engine.questionIndex + 1} / ${VIGNETTE_QUESTIONS.length}`);
+
+  const title = document.getElementById('xr-hud-title');
+  if (title) title.setAttribute('value', question.title);
+
+  const fillPct = (engine.questionIndex + 1) / VIGNETTE_QUESTIONS.length;
+  const fillWidth = 1.6 * fillPct;
+  const fillEl = document.getElementById('xr-hud-progress-fill');
+  if (fillEl) {
+    fillEl.setAttribute('width', Math.max(0.02, fillWidth));
+    fillEl.setAttribute('position', `${-0.8 + fillWidth / 2} 0.42 0.001`);
+  }
+
+  const qText = document.getElementById('xr-q-text');
+  if (qText) qText.setAttribute('value', question.prompt);
+}
+
+function hideXRHud() {
+  const hud = document.getElementById('xr-hud');
+  const qPanel = document.getElementById('xr-question-panel');
+  const loading = document.getElementById('xr-loading');
+  if (hud) hud.setAttribute('visible', false);
+  if (qPanel) qPanel.setAttribute('visible', false);
+  if (loading) loading.setAttribute('visible', false);
+}
+
+function showXRLoading() {
+  hideXRHud();
+  const loading = document.getElementById('xr-loading');
+  if (loading) loading.setAttribute('visible', true);
+}
+
+// ---------------------------------------------------------------------------
+// XR scene events
+// ---------------------------------------------------------------------------
+function wireXREvents() {
+  const scene = document.getElementById('aframe-scene');
+  const enterBtn = document.getElementById('xr-enter-btn');
+
+  if (enterBtn) {
+    enterBtn.addEventListener('click', () => {
+      if (scene && !scene.is('vr-mode')) scene.enterVR();
+    });
+  }
+
+  if (scene) {
+    scene.addEventListener('enter-vr', () => {
+      xrActive = true;
+      document.body.classList.add('xr-active');
+    });
+    scene.addEventListener('exit-vr', () => {
+      xrActive = false;
+      document.body.classList.remove('xr-active');
+      stopFuseAnim();
+    });
+  }
+
+  const cursor = document.getElementById('xr-cursor');
+  if (cursor) {
+    cursor.addEventListener('mouseenter', () => {
+      const reticle = document.getElementById('xr-reticle');
+      if (reticle) {
+        reticle.setAttribute('material', 'color: #e06040; shader: flat; opacity: 1; transparent: true');
+        reticle.setAttribute('geometry', 'primitive: ring; radiusInner: 0.003; radiusOuter: 0.006');
+      }
+    });
+    cursor.addEventListener('mouseleave', () => {
+      const reticle = document.getElementById('xr-reticle');
+      if (reticle) {
+        reticle.setAttribute('material', 'color: #f0a830; shader: flat; opacity: 0.9; transparent: true');
+        reticle.setAttribute('geometry', 'primitive: ring; radiusInner: 0.002; radiusOuter: 0.004');
+      }
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Welcome
+// ---------------------------------------------------------------------------
 function showWelcome() {
+  hideXRHud();
   const container = document.getElementById('app-ui');
   container.innerHTML = `
     <div class="welcome-screen">
@@ -54,6 +244,9 @@ function showWelcome() {
   `;
 }
 
+// ---------------------------------------------------------------------------
+// Assessment flow
+// ---------------------------------------------------------------------------
 function startAssessment() {
   engine.reset();
   loadQuestion(0);
@@ -74,65 +267,99 @@ function loadQuestion(index) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// XR vignette loader (spatial scene with gaze interaction)
+// ---------------------------------------------------------------------------
 function loadXRVignette(question) {
   const scene = document.getElementById('aframe-scene');
   const sceneContent = document.getElementById('scene-content');
   const ui = document.getElementById('app-ui');
 
-  ui.innerHTML = `
-    <div class="xr-overlay">
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: ${((engine.questionIndex) / VIGNETTE_QUESTIONS.length) * 100}%"></div>
+  const doLoad = () => {
+    scene.style.display = 'block';
+
+    ui.innerHTML = `
+      <div class="xr-overlay">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${((engine.questionIndex) / VIGNETTE_QUESTIONS.length) * 100}%"></div>
+        </div>
+        <p class="vignette-title">${question.title}</p>
+        <p class="vignette-prompt">${question.prompt}</p>
       </div>
-      <p class="vignette-title">${question.title}</p>
-      <p class="vignette-prompt">${question.prompt}</p>
-    </div>
-  `;
+    `;
 
-  scene.style.display = 'block';
-  sceneContent.innerHTML = buildVignetteScene(question);
+    sceneContent.innerHTML = buildVignetteScene(question);
+    updateXRHud(question);
 
-  setTimeout(() => {
-    const targets = sceneContent.querySelectorAll('.interactive-target');
-    targets.forEach(target => {
-      target.addEventListener('click', () => {
-        const targetId = target.getAttribute('data-target');
-        handleSpatialChoice(question, targetId);
+    setTimeout(() => {
+      const targets = sceneContent.querySelectorAll('.interactive-target');
+      targets.forEach(target => {
+        target.addEventListener('click', () => {
+          const targetId = target.getAttribute('data-target');
+          handleSpatialChoice(question, targetId);
+        });
+
+        target.addEventListener('mouseenter', () => {
+          const label = target.querySelector('.hover-label');
+          if (label) label.setAttribute('visible', 'true');
+          target.setAttribute('animation__grow', 'property: scale; to: 1.1 1.1 1.1; dur: 200; easing: easeOutQuad');
+          startFuseAnim();
+
+          const sndHover = document.getElementById('xr-snd-hover');
+          if (sndHover?.components?.sound) sndHover.components.sound.playSound();
+        });
+
+        target.addEventListener('mouseleave', () => {
+          const label = target.querySelector('.hover-label');
+          if (label) label.setAttribute('visible', 'false');
+          target.setAttribute('animation__shrink', 'property: scale; to: 1 1 1; dur: 200; easing: easeOutQuad');
+          stopFuseAnim();
+        });
       });
+    }, 100);
+  };
 
-      target.addEventListener('mouseenter', () => {
-        const label = target.querySelector('.hover-label');
-        if (label) label.setAttribute('visible', 'true');
-        target.setAttribute('scale', '1.1 1.1 1.1');
-      });
-
-      target.addEventListener('mouseleave', () => {
-        const label = target.querySelector('.hover-label');
-        if (label) label.setAttribute('visible', 'false');
-        target.setAttribute('scale', '1 1 1');
-      });
+  if (engine.questionIndex > 0) {
+    showXRLoading();
+    comfortFade(() => {
+      const loading = document.getElementById('xr-loading');
+      if (loading) loading.setAttribute('visible', false);
+      doLoad();
     });
-  }, 100);
+  } else {
+    doLoad();
+  }
 }
 
 function handleSpatialChoice(question, targetId) {
   const choice = question.choices.find(c => c.spatialTarget === targetId);
   if (!choice) return;
 
+  stopFuseAnim();
   engine.recordInteraction(question.id, choice.scores);
 
-  const target = document.querySelector(`[data-target="${targetId}"]`);
-  if (target) {
-    target.setAttribute('animation__select', 'property: scale; to: 1.3 1.3 1.3; dur: 200');
-    target.setAttribute('animation__fade', 'property: opacity; to: 0; dur: 400; delay: 200');
-  }
+  const sndClick = document.getElementById('xr-snd-click');
+  if (sndClick?.components?.sound) sndClick.components.sound.playSound();
+
+  const allTargets = document.querySelectorAll('.interactive-target');
+  allTargets.forEach(t => {
+    if (t.getAttribute('data-target') === targetId) {
+      t.setAttribute('animation__select', 'property: scale; to: 1.3 1.3 1.3; dur: 200; easing: easeOutQuad');
+    } else {
+      t.setAttribute('animation__fadeout', 'property: material.opacity; to: 0.15; dur: 300; easing: easeInQuad');
+    }
+  });
 
   setTimeout(() => loadQuestion(engine.questionIndex), 700);
 }
 
+// ---------------------------------------------------------------------------
+// 2D card fallback
+// ---------------------------------------------------------------------------
 function load2DCard(question) {
   const scene = document.getElementById('aframe-scene');
   scene.style.display = 'none';
+  hideXRHud();
 
   const ui = document.getElementById('app-ui');
   const progress = ((engine.questionIndex) / VIGNETTE_QUESTIONS.length) * 100;
@@ -171,19 +398,22 @@ function load2DCard(question) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Results
+// ---------------------------------------------------------------------------
 function showResults() {
   const scene = document.getElementById('aframe-scene');
   scene.style.display = 'none';
+  hideXRHud();
 
   const results = engine.getResults();
   const record = passport.writeResult(results);
 
-  const ui = document.getElementById('app-ui');
-  const topDims = results.topDimensions;
   const archetype = results.archetype;
   const pathways = results.pathways;
   const scores = results.scores;
 
+  const ui = document.getElementById('app-ui');
   ui.innerHTML = `
     <div class="results-screen">
       <div class="results-header">

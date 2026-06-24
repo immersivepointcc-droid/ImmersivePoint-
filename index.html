@@ -20,24 +20,134 @@
   <!-- A-Frame Scene (shown in XR mode, hidden in 2D) -->
   <a-scene id="aframe-scene"
            embedded
-           vr-mode-ui="enabled: true"
-           cursor="rayOrigin: mouse; fuse: true; fuseTimeout: 1500"
-           raycaster="objects: .interactive-target">
-    <a-entity id="camera-rig" position="0 1.6 2">
-      <a-camera look-controls wasd-controls>
-        <a-cursor color="#f0a830" fuse="true" fuse-timeout="1500"
-                  animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"
-                  animation__fusing="property: scale; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500; easing: easeInCubic"
-                  animation__mouseleave="property: scale; startEvents: mouseleave; to: 1 1 1; dur: 150">
-          <a-ring radius-inner="0.02" radius-outer="0.035" color="#f0a830" opacity="0.8"></a-ring>
-        </a-cursor>
+           vr-mode-ui="enabled: false"
+           renderer="colorManagement: true; sortObjects: true; antialias: true"
+           loading-screen="enabled: false">
+
+    <!-- Audio stubs (replace src with real assets) -->
+    <a-assets>
+      <audio id="snd-hover" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" preload="auto"></audio>
+      <audio id="snd-click" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=" preload="auto"></audio>
+    </a-assets>
+
+    <!-- Camera rig (seated + standing compatible) -->
+    <a-entity id="camera-rig" position="0 0 0">
+      <a-camera id="xr-cam" position="0 1.6 2" look-controls wasd-controls>
+
+        <!-- Center reticle dot (always visible reference) -->
+        <a-entity id="xr-reticle"
+          geometry="primitive: ring; radiusInner: 0.002; radiusOuter: 0.004"
+          material="color: #f0a830; shader: flat; opacity: 0.9; transparent: true"
+          position="0 0 -0.5">
+        </a-entity>
+
+        <!-- Fuse countdown ring (fills as gaze dwells) -->
+        <a-entity id="xr-fuse-ring"
+          geometry="primitive: ring; radiusInner: 0.006; radiusOuter: 0.012; thetaLength: 0"
+          material="color: #f0a830; shader: flat; opacity: 0.8; transparent: true; side: double"
+          position="0 0 -0.5"
+          visible="false">
+        </a-entity>
+
+        <!-- Gaze cursor with 2s fuse timeout -->
+        <a-entity id="xr-cursor"
+          cursor="fuse: true; fuseTimeout: 2000"
+          raycaster="objects: .interactive-target; far: 20"
+          position="0 0 -0.5"
+          geometry="primitive: ring; radiusInner: 0.004; radiusOuter: 0.008"
+          material="color: #f0a830; shader: flat; opacity: 0.7; transparent: true">
+        </a-entity>
+
+        <!-- Sound stubs on cursor -->
+        <a-entity id="xr-snd-hover" sound="src: #snd-hover; volume: 0.3; autoplay: false"></a-entity>
+        <a-entity id="xr-snd-click" sound="src: #snd-click; volume: 0.5; autoplay: false"></a-entity>
       </a-camera>
+
+      <!-- Hand controllers (Quest hand tracking + controllers) -->
+      <a-entity id="xr-hand-left"
+        hand-controls="hand: left; handModelStyle: lowPoly"
+        laser-controls="hand: left"
+        raycaster="objects: .interactive-target; far: 15; lineColor: #f0a830; lineOpacity: 0.5">
+      </a-entity>
+      <a-entity id="xr-hand-right"
+        hand-controls="hand: right; handModelStyle: lowPoly"
+        laser-controls="hand: right"
+        raycaster="objects: .interactive-target; far: 15; lineColor: #f0a830; lineOpacity: 0.5">
+      </a-entity>
     </a-entity>
 
+    <!-- Ground reference grid (built dynamically in app.js) -->
+    <a-entity id="xr-ground">
+      <a-circle position="0 0.005 0" rotation="-90 0 0" radius="8"
+        material="color: #1a1020; opacity: 0.7; transparent: true; shader: flat">
+      </a-circle>
+      <a-entity id="xr-grid-lines"></a-entity>
+    </a-entity>
+
+    <!-- Base lighting -->
     <a-entity light="type: ambient; color: #444; intensity: 0.4"></a-entity>
 
+    <!-- Sky -->
+    <a-sky color="#1a1020"></a-sky>
+
+    <!-- Comfort vignette sphere (fade-to-black between scenes) -->
+    <a-entity id="xr-vignette"
+      geometry="primitive: sphere; radius: 0.3; segmentsWidth: 32; segmentsHeight: 16"
+      material="color: #000; shader: flat; opacity: 0; transparent: true; side: back"
+      position="0 1.6 0">
+    </a-entity>
+
+    <!-- 3D HUD (progress + counter, 2m in front, below eye level) -->
+    <a-entity id="xr-hud" position="0 1.35 -2" visible="false">
+      <a-plane id="xr-hud-progress-bg" position="0 0.42 0"
+        width="1.6" height="0.03"
+        material="color: #1a1020; opacity: 0.6; transparent: true; shader: flat">
+      </a-plane>
+      <a-plane id="xr-hud-progress-fill" position="-0.72 0.42 0.001"
+        width="0.16" height="0.025"
+        material="color: #f0a830; shader: flat; opacity: 0.9; transparent: true">
+      </a-plane>
+      <a-text id="xr-hud-counter"
+        value="1 / 10"
+        position="-0.78 0.49 0" align="left" anchor="left"
+        color="#8a7a95" width="1.2">
+      </a-text>
+      <a-text id="xr-hud-title"
+        value=""
+        position="0.78 0.49 0" align="right" anchor="right"
+        color="#f0a830" width="1.2">
+      </a-text>
+    </a-entity>
+
+    <!-- XR question text + prompt -->
+    <a-entity id="xr-question-panel" position="0 1.55 -2.5" visible="false">
+      <a-text id="xr-q-text" value=""
+        position="0 0.3 0" align="center" anchor="center"
+        color="#f0e8f5" width="2.2" wrap-count="40" baseline="top">
+      </a-text>
+    </a-entity>
+
+    <!-- Loading state (between vignettes) -->
+    <a-entity id="xr-loading" position="0 1.5 -2.5" visible="false">
+      <a-icosahedron radius="0.08"
+        material="color: #f0a830; emissive: #f0a830; emissiveIntensity: 0.5; wireframe: true"
+        animation="property: rotation; to: 360 360 0; dur: 2000; loop: true; easing: linear">
+      </a-icosahedron>
+      <a-icosahedron radius="0.12"
+        material="color: #e06040; emissive: #e06040; emissiveIntensity: 0.3; wireframe: true; opacity: 0.5; transparent: true"
+        animation="property: rotation; to: 0 -360 360; dur: 3000; loop: true; easing: linear">
+      </a-icosahedron>
+      <a-text value="Stepping into the next space..."
+        position="0 -0.25 0" align="center" color="#f0a830" width="2">
+      </a-text>
+    </a-entity>
+
+    <!-- Vignette scene content (populated dynamically) -->
     <a-entity id="scene-content"></a-entity>
   </a-scene>
+
+  <!-- Enter VR button (shown when WebXR detected) -->
+  <button class="xr-enter-btn" id="xr-enter-btn" style="display:none">Enter VR</button>
 
   <!-- 2D UI Layer -->
   <div id="app-ui"></div>

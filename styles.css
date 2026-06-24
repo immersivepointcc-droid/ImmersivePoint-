@@ -366,6 +366,36 @@ body[data-mode="xr"] #app-ui .results-screen { pointer-events: auto; min-height:
 .passport-status p { color: var(--spark-success); font-size: 0.9rem; }
 .passport-status small { color: var(--spark-muted); }
 
+/* XR Mode */
+.xr-enter-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 14px 32px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--spark-deep);
+  background: linear-gradient(135deg, var(--spark-gold), #ffcc44);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  box-shadow: 0 4px 24px rgba(240, 168, 48, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.xr-enter-btn:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 8px 32px rgba(240, 168, 48, 0.5);
+}
+
+.xr-active .xr-enter-btn { display: none !important; }
+.xr-active #app-ui { display: none !important; }
+
 /* Responsive */
 @media (max-width: 480px) {
   .welcome-screen h1 { font-size: 1.6rem; }
