@@ -4,17 +4,12 @@
  * string of A-Frame entities ready to inject into the scene.
  */
 
-const ENV_PRESETS = {
-  studio:    { preset: 'japan',    skyType: 'gradient', skyColor: '#f5f0e8', horizonColor: '#e8ddc8', lighting: 'none', fog: 0.9 },
-  community: { preset: 'forest',   skyType: 'gradient', skyColor: '#87CEEB', horizonColor: '#b8d8b8', lighting: 'none', fog: 0.8 },
-  lab:       { preset: 'default',  skyType: 'gradient', skyColor: '#e8f0ff', horizonColor: '#d0e0f8', lighting: 'none', fog: 0.85 },
-  startup:   { preset: 'japan',    skyType: 'gradient', skyColor: '#fafafa', horizonColor: '#e8e0d0', lighting: 'none', fog: 0.9 }
+const SKY_COLORS = {
+  studio:    '#f5f0e8',
+  community: '#87CEEB',
+  lab:       '#e8f0ff',
+  startup:   '#fafafa'
 };
-
-function envString(env) {
-  const c = ENV_PRESETS[env];
-  return Object.entries(c).map(([k, v]) => `${k}: ${v}`).join('; ');
-}
 
 // ---------------------------------------------------------------------------
 // 1. DESIGN STUDIO — bright, airy creative space
@@ -22,7 +17,7 @@ function envString(env) {
 export function buildDesignStudioScene() {
   return `
     <a-entity id="studio-env">
-      <a-entity environment="${envString('studio')}"></a-entity>
+      <a-sky color="${SKY_COLORS.studio}"></a-sky>
 
       <!-- Lighting rig -->
       <a-entity light="type: ambient; color: #fff8ee; intensity: 0.55"></a-entity>
@@ -277,7 +272,7 @@ export function buildDesignStudioScene() {
 export function buildCommunityCenterScene() {
   return `
     <a-entity id="community-env">
-      <a-entity environment="${envString('community')}"></a-entity>
+      <a-sky color="${SKY_COLORS.community}"></a-sky>
 
       <!-- Lighting — warm and inviting -->
       <a-entity light="type: ambient; color: #fff0dd; intensity: 0.5"></a-entity>
@@ -523,7 +518,7 @@ export function buildCommunityCenterScene() {
 export function buildBiotechLabScene() {
   return `
     <a-entity id="lab-env">
-      <a-entity environment="${envString('lab')}"></a-entity>
+      <a-sky color="${SKY_COLORS.lab}"></a-sky>
 
       <!-- Lighting — cool, clinical fluorescents -->
       <a-entity light="type: ambient; color: #e0e8ff; intensity: 0.5"></a-entity>
@@ -801,7 +796,7 @@ export function buildBiotechLabScene() {
 export function buildStartupOfficeScene() {
   return `
     <a-entity id="startup-env">
-      <a-entity environment="${envString('startup')}"></a-entity>
+      <a-sky color="${SKY_COLORS.startup}"></a-sky>
 
       <!-- Lighting — bright, modern -->
       <a-entity light="type: ambient; color: #fff8f0; intensity: 0.5"></a-entity>

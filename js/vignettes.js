@@ -6,22 +6,22 @@
 import { buildCNCShopScene, buildServerRoomScene, buildWarehouseScene, buildOutdoorSiteScene } from './vignettes-industrial.js';
 import { buildDesignStudioScene, buildCommunityCenterScene, buildBiotechLabScene, buildStartupOfficeScene } from './vignettes-professional.js';
 
-const ENV_PRESETS = {
-  welding:    { preset: 'threetowers', skyType: 'gradient', skyColor: '#111424', horizonColor: '#2b314d', lighting: 'none', fog: 0.7 },
-  clinic:     { preset: 'default',     skyType: 'gradient', skyColor: '#c8e8ff', horizonColor: '#eef6ff', lighting: 'none', fog: 0.85 },
-  cnc:        { preset: 'tron',        skyType: 'gradient', skyColor: '#0a0a20', horizonColor: '#1a1a3e', lighting: 'none', fog: 0.6 },
-  studio:     { preset: 'japan',       skyType: 'gradient', skyColor: '#f5f0e8', horizonColor: '#e8ddc8', lighting: 'none', fog: 0.9 },
-  server:     { preset: 'tron',        skyType: 'gradient', skyColor: '#000011', horizonColor: '#001133', lighting: 'none', fog: 0.5 },
-  community:  { preset: 'forest',      skyType: 'gradient', skyColor: '#87CEEB', horizonColor: '#b8d8b8', lighting: 'none', fog: 0.8 },
-  warehouse:  { preset: 'goaland',     skyType: 'gradient', skyColor: '#b0b0b0', horizonColor: '#808888', lighting: 'none', fog: 0.7 },
-  lab:        { preset: 'default',     skyType: 'gradient', skyColor: '#e8f0ff', horizonColor: '#d0e0f8', lighting: 'none', fog: 0.85 },
-  startup:    { preset: 'japan',       skyType: 'gradient', skyColor: '#fafafa', horizonColor: '#e8e0d0', lighting: 'none', fog: 0.9 },
-  outdoor:    { preset: 'goldmine',    skyType: 'gradient', skyColor: '#ff8844', horizonColor: '#cc6622', lighting: 'none', fog: 0.6 }
+const SKY_COLORS = {
+  welding:   '#111424',
+  clinic:    '#c8e8ff',
+  cnc:       '#0a0a20',
+  studio:    '#f5f0e8',
+  server:    '#000011',
+  community: '#87CEEB',
+  warehouse: '#b0b0b0',
+  lab:       '#e8f0ff',
+  startup:   '#fafafa',
+  outdoor:   '#ff8844'
 };
 
-function envString(env) {
-  const c = ENV_PRESETS[env] || ENV_PRESETS.welding;
-  return Object.entries(c).map(([k, v]) => `${k}: ${v}`).join('; ');
+function skyForEnv(env) {
+  const color = SKY_COLORS[env] || '#1a1020';
+  return `<a-sky color="${color}"></a-sky>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ function envString(env) {
 function buildWeldingBayScene() {
   return `
     <a-entity id="welding-env">
-      <a-entity environment="${envString('welding')}"></a-entity>
+      ${skyForEnv('welding')}
 
       <!-- Lighting rig -->
       <a-entity light="type: ambient; color: #ff6600; intensity: 0.25"></a-entity>
@@ -93,11 +93,10 @@ function buildWeldingBayScene() {
                 color="#ffcc00" visible="false" class="hover-label"></a-text>
       </a-entity>
 
-      <!-- Sparks from weld point -->
-      <a-entity position="0.3 1.15 -2"
-                particle-system="preset: dust; color: #ff6600,#ffaa00,#ffdd44; particleCount: 80;
-                                 size: 0.04,0.08; maxAge: 0.4; velocityValue: 0 3 0;
-                                 velocitySpread: 2 1 2; opacity: 0.9; blending: 2"></a-entity>
+      <!-- Spark glow (lightweight substitute for particle system) -->
+      <a-sphere position="0.3 1.15 -2" radius="0.08" color="#ff6600"
+                material="emissive: #ff4400; emissiveIntensity: 1.5; opacity: 0.6; transparent: true"
+                animation="property: scale; from: 0.8 0.8 0.8; to: 1.3 1.3 1.3; dur: 400; dir: alternate; loop: true"></a-sphere>
 
       <!-- === QUALITY CHART (interactive) === -->
       <a-entity id="spatial-chart" class="interactive-target" data-target="chart"
@@ -202,7 +201,7 @@ function buildWeldingBayScene() {
 function buildClinicFloorScene() {
   return `
     <a-entity id="clinic-env">
-      <a-entity environment="${envString('clinic')}"></a-entity>
+      ${skyForEnv('clinic')}
 
       <!-- Lighting -->
       <a-entity light="type: ambient; color: #e8f0ff; intensity: 0.6"></a-entity>
@@ -417,7 +416,7 @@ function buildGenericScene(env, question) {
 
   return `
     <a-entity id="${question.environment}-env">
-      <a-entity environment="${envString(env)}"></a-entity>
+      ${skyForEnv(env)}
       <a-entity light="type: ambient; color: #ffffff; intensity: 0.5"></a-entity>
       <a-entity light="type: directional; color: #ffffff; intensity: 0.7" position="2 5 2"></a-entity>
       ${choiceEntities}
@@ -441,4 +440,4 @@ function buildVignetteScene(question) {
   }
 }
 
-export { buildVignetteScene, ENV_PRESETS };
+export { buildVignetteScene, SKY_COLORS };

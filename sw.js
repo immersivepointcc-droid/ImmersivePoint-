@@ -1,4 +1,4 @@
-const CACHE_NAME = 'imagination-spark-xr-v3';
+const CACHE_NAME = 'imagination-spark-xr-v4';
 
 const PRECACHE_URLS = [
   '/',
@@ -10,9 +10,7 @@ const PRECACHE_URLS = [
   '/js/vignettes-professional.js',
   '/js/passport.js',
   '/styles.css',
-  'https://aframe.io/releases/1.6.0/aframe.min.js',
-  'https://unpkg.com/aframe-environment-component@1.3.3/dist/aframe-environment-component.min.js',
-  'https://unpkg.com/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js'
+  'https://aframe.io/releases/1.6.0/aframe.min.js'
 ];
 
 self.addEventListener('install', event => {

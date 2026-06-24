@@ -43,7 +43,6 @@ body[data-mode="xr"] #app-ui .welcome-screen { pointer-events: auto; }
 body[data-mode="xr"] #app-ui .results-screen { pointer-events: auto; min-height: 100vh; }
 
 #aframe-scene {
-  display: none;
   position: fixed;
   top: 0;
   left: 0;

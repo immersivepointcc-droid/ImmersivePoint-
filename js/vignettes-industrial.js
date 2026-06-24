@@ -9,7 +9,7 @@
 export function buildCNCShopScene() {
   return `
     <a-entity id="cnc-env">
-      <a-entity environment="preset: tron; skyType: gradient; skyColor: #0a0a20; horizonColor: #1a1a3e; lighting: none; fog: 0.6"></a-entity>
+      <a-sky color="#0a0a20"></a-sky>
 
       <!-- Lighting rig -->
       <a-entity light="type: ambient; color: #8888cc; intensity: 0.2"></a-entity>
@@ -260,7 +260,7 @@ export function buildCNCShopScene() {
 export function buildServerRoomScene() {
   return `
     <a-entity id="server-env">
-      <a-entity environment="preset: tron; skyType: gradient; skyColor: #000011; horizonColor: #001133; lighting: none; fog: 0.5"></a-entity>
+      <a-sky color="#000011"></a-sky>
 
       <!-- Lighting rig — cool blue data-center feel -->
       <a-entity light="type: ambient; color: #112244; intensity: 0.2"></a-entity>
@@ -515,7 +515,7 @@ export function buildServerRoomScene() {
 export function buildWarehouseScene() {
   return `
     <a-entity id="warehouse-env">
-      <a-entity environment="preset: goaland; skyType: gradient; skyColor: #b0b0b0; horizonColor: #808888; lighting: none; fog: 0.7"></a-entity>
+      <a-sky color="#b0b0b0"></a-sky>
 
       <!-- Lighting — industrial overhead -->
       <a-entity light="type: ambient; color: #ccccbb; intensity: 0.35"></a-entity>
@@ -805,7 +805,7 @@ export function buildWarehouseScene() {
 export function buildOutdoorSiteScene() {
   return `
     <a-entity id="outdoor-env">
-      <a-entity environment="preset: goldmine; skyType: gradient; skyColor: #ff8844; horizonColor: #cc6622; lighting: none; fog: 0.6"></a-entity>
+      <a-sky color="#ff8844"></a-sky>
 
       <!-- Golden hour lighting -->
       <a-entity light="type: ambient; color: #ffaa66; intensity: 0.4"></a-entity>
