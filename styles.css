@@ -42,6 +42,8 @@ body[data-mode="xr"] #app-ui .xr-overlay { pointer-events: auto; }
 body[data-mode="xr"] #app-ui .welcome-screen { pointer-events: auto; }
 body[data-mode="xr"] #app-ui .results-screen { pointer-events: auto; min-height: 100vh; }
 
+body[data-mode="2d"] #aframe-scene { display: none; }
+
 #aframe-scene {
   position: fixed;
   top: 0;

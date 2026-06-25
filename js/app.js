@@ -241,13 +241,10 @@ function loadQuestion(index) {
 }
 
 function loadXRVignette(question) {
-  const scene = document.getElementById('aframe-scene');
   const sceneContent = document.getElementById('scene-content');
   const ui = document.getElementById('app-ui');
 
   const doLoad = () => {
-    // scene is always in the DOM, no display toggle needed
-
     ui.innerHTML = `
       <div class="xr-overlay">
         <div class="progress-bar">
@@ -324,8 +321,6 @@ function handleSpatialChoice(question, targetId) {
 }
 
 function load2DCard(question) {
-  const scene = document.getElementById('aframe-scene');
-  // scene stays in DOM, hidden behind UI z-index
   hideXRHud();
 
   const ui = document.getElementById('app-ui');
@@ -366,8 +361,6 @@ function load2DCard(question) {
 }
 
 function showResults() {
-  const scene = document.getElementById('aframe-scene');
-  // scene stays in DOM, hidden behind UI z-index
   hideXRHud();
 
   const results = engine.getResults();
