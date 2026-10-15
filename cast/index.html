@@ -1024,45 +1024,53 @@
     <video id="lightbox-video" controls autoplay style="display:none"></video>
   </div>
 
-  <!-- How to cast -->
+  <!-- Screen Mirror Setup -->
   <div class="how-to-section">
-    <h3>How to Cast from VR Headsets</h3>
+    <h3>Screen Mirror Setup (scrcpy)</h3>
     <div class="how-to-steps">
       <div class="how-to-step">
         <div class="how-to-step-num">1</div>
         <div class="how-to-step-text">
-          Open the headset's browser and navigate to <strong id="how-to-url">ipcast.netlify.app/CODE</strong> (replace CODE with the room code above).
+          <strong>One-time setup:</strong> Enable Developer Mode on each Quest headset via the Meta app (Settings &rarr; Headset Settings &rarr; Developer Mode). Requires a <a href="https://developer.meta.com" target="_blank" style="color:var(--cyan-glow)">Meta developer account</a>.
         </div>
       </div>
       <div class="how-to-step">
         <div class="how-to-step-num">2</div>
         <div class="how-to-step-text">
-          Grant the screen-sharing permission when prompted. Casting starts automatically.
+          <strong>Install scrcpy:</strong> Download from <a href="https://github.com/Genymobile/scrcpy/releases/latest" target="_blank" style="color:var(--cyan-glow)">github.com/genymobile/scrcpy</a>. Extract the zip &mdash; no installer needed.
         </div>
       </div>
       <div class="how-to-step">
         <div class="how-to-step-num">3</div>
         <div class="how-to-step-text">
-          The headset's screen will appear in the grid above. Use the <strong>fullscreen</strong> button on any feed to expand it.
+          <strong>Connect headset:</strong> Plug Quest in via USB. Accept "Allow USB Debugging" inside the headset. For WiFi: run <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;font-size:0.8em;">adb tcpip 5555</code> then <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;font-size:0.8em;">adb connect HEADSET_IP:5555</code>.
+        </div>
+      </div>
+      <div class="how-to-step">
+        <div class="how-to-step-num">4</div>
+        <div class="how-to-step-text">
+          <strong>Launch mirror:</strong> Run <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;font-size:0.8em;">scripts\launch-scrcpy.bat</code> or <code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:3px;font-size:0.8em;">scripts\mirror-all.bat</code> for all connected headsets. Each headset gets its own window &mdash; capture in OBS.
         </div>
       </div>
     </div>
+
     <div class="how-to-compat" style="margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);background:rgba(123,47,190,0.06);border:1px solid rgba(123,47,190,0.15);border-radius:var(--radius-md);margin-bottom:var(--sp-4);">
-      <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--purple-glow);letter-spacing:0.1em;margin-bottom:var(--sp-2);">AUTO-CONNECT MODE</div>
+      <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--purple-glow);letter-spacing:0.1em;margin-bottom:var(--sp-2);">MDM DEVICE CONTROL</div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--ink-dim);line-height:1.6;">
-        Set headset browser homepage to <strong style="color:var(--cyan-glow);" id="auto-connect-url"></strong> — headsets will auto-discover the active room and start casting on power-on. No room code needed.
+        Set headset browser homepage to <strong style="color:var(--cyan-glow);" id="auto-connect-url"></strong> &mdash; headsets register with MDM on power-on for remote URL push, kiosk mode, and fleet commands.
       </div>
     </div>
+
     <div class="how-to-compat" style="margin-top:var(--sp-4);padding:var(--sp-3) var(--sp-4);background:rgba(0,180,216,0.06);border:1px solid rgba(0,180,216,0.15);border-radius:var(--radius-md);">
-      <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--cyan);letter-spacing:0.1em;margin-bottom:var(--sp-2);">COMPATIBLE HEADSETS</div>
+      <div style="font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--cyan);letter-spacing:0.1em;margin-bottom:var(--sp-2);">SUPPORTED HEADSETS</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-2);">
         <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--ink-dim);">
           <strong style="color:var(--ink);">Meta Quest 3</strong><br/>
-          Meta Quest Browser
+          scrcpy mirror + MDM
         </div>
         <div style="font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--ink-dim);">
-          <strong style="color:var(--ink);">HTC Vive Focus 3</strong><br/>
-          Vive Browser (Chromium)
+          <strong style="color:var(--ink);">Pico 4 Ultra</strong><br/>
+          scrcpy mirror + MDM
         </div>
       </div>
     </div>
@@ -1205,11 +1213,6 @@ async function initFacilitatorView() {
     } else {
       roomUrlEl.innerHTML = `ipcast.netlify.app/<span id="room-code-echo">${roomCode}</span>`;
     }
-  }
-
-  const howToUrl = document.getElementById('how-to-url');
-  if (howToUrl) {
-    howToUrl.textContent = IS_LOCAL ? `${location.host}/cast/#join=CODE` : 'ipcast.netlify.app/CODE';
   }
 
   const autoConnectUrl = document.getElementById('auto-connect-url');
